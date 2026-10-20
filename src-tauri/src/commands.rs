@@ -44,10 +44,16 @@ pub fn lock_cursor(state: State<OverlayState>, locked: bool) {
     state.set_locked(locked);
 }
 
-/// 乗車中かどうか（乗車中は Esc で緊急脱出できる）
+/// 乗車中かどうか（乗車中は Esc で緊急停車できる）
 #[tauri::command]
 pub fn set_riding(state: State<OverlayState>, riding: bool) {
     state.set_riding(riding);
+}
+
+/// 緊急停車の確認ダイアログを表示したことを通知する
+#[tauri::command]
+pub fn ack_emergency(state: State<OverlayState>) {
+    state.ack_emergency();
 }
 
 /// 乗車1回を記録する

@@ -63,9 +63,14 @@ export async function lockCursor(locked: boolean): Promise<void> {
   if (isTauri) await invoke("lock_cursor", { locked });
 }
 
-/** 乗車中かどうかを通知する。乗車中は Esc キーで緊急脱出できる */
+/** 乗車中かどうかを通知する。乗車中は Esc キーで緊急停車できる */
 export async function setRiding(riding: boolean): Promise<void> {
   if (isTauri) await invoke("set_riding", { riding });
+}
+
+/** 緊急停車の確認ダイアログを表示したことを通知する（未通知のままだと Rust 側が確認なしで停車する） */
+export async function ackEmergency(): Promise<void> {
+  if (isTauri) await invoke("ack_emergency");
 }
 
 export async function recordRide(): Promise<Progress> {
@@ -93,6 +98,8 @@ export interface NativeEvents {
   onCursor(cb: (p: Point) => void): void;
   /** 走行中に物理マウス入力が抑止された */
   onMouseBlocked(cb: () => void): void;
+  /** 乗車中に Esc が押された（マウスの拘束は解除済み） */
+  onEmergencyRequest(cb: () => void): void;
   /** ハートビート途絶によりカーソル拘束が自動解除された */
   onLockReleased(cb: () => void): void;
 }
@@ -103,6 +110,7 @@ export const events: NativeEvents = isTauri
       onHidden: (cb) => void listen("overlay-hidden", () => cb()),
       onCursor: (cb) => void listen<Point>("cursor", (e) => cb(e.payload)),
       onMouseBlocked: (cb) => void listen("mouse-blocked", () => cb()),
+      onEmergencyRequest: (cb) => void listen("emergency-request", () => cb()),
       onLockReleased: (cb) => void listen("lock-released", () => cb()),
     }
   : {
@@ -110,5 +118,6 @@ export const events: NativeEvents = isTauri
       onHidden: () => {},
       onCursor: (cb) => window.addEventListener("mousemove", (e) => cb({ x: e.clientX, y: e.clientY })),
       onMouseBlocked: () => {},
+      onEmergencyRequest: () => {},
       onLockReleased: () => {},
     };

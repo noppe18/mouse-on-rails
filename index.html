@@ -12,11 +12,21 @@
       <div id="hud-line" class="hud-line"></div>
       <div id="hud-status" class="hud-status"></div>
       <div id="hud-sub" class="hud-sub"></div>
-      <div id="hud-progress" class="hud-progress"></div>
-      <div id="hud-lines" class="hud-lines"></div>
       <div id="hud-hint" class="hud-hint"></div>
     </section>
-    <div id="popup" data-interactive hidden></div>
+    <div id="emergency" data-interactive hidden role="alertdialog" aria-labelledby="emergency-title">
+      <div class="hazard"></div>
+      <div class="emergency-box">
+        <div id="emergency-title" class="emergency-title">⚠ 緊急停車 ⚠</div>
+        <div class="emergency-lead">緊急停車します。</div>
+        <div id="emergency-message" class="emergency-message"></div>
+        <div class="emergency-actions">
+          <button id="emergency-stop" class="emergency-stop">覚悟はできている（停車する）</button>
+          <button id="emergency-cancel" class="emergency-cancel">やめておく</button>
+        </div>
+      </div>
+      <div class="hazard"></div>
+    </div>
     <div id="toasts"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

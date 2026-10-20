@@ -2,7 +2,7 @@
 // 走行中の物理マウス入力は低レベルマウスフック (WH_MOUSE_LL) で破棄し、
 // カーソルは SetCursorPos で車両に追従させる。
 // SetCursorPos 等の合成入力 (LLMHF_INJECTED) は通すため、アプリ自身の移動は妨げない。
-// 乗車中は低レベルキーボードフック (WH_KEYBOARD_LL) で Esc を監視し、緊急脱出に使う。
+// 乗車中は低レベルキーボードフック (WH_KEYBOARD_LL) で Esc を監視し、緊急停車に使う。
 use std::path::Path;
 use std::ptr::null_mut;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -44,7 +44,7 @@ pub fn set_input_blocked(blocked: bool) {
     update_hook_thread();
 }
 
-/// Esc キーによる緊急脱出の監視を開始／終了する（乗車中だけ有効にする）
+/// Esc キーによる緊急停車の監視を開始／終了する（乗車中だけ有効にする）
 pub fn set_escape_armed(armed: bool) {
     ESCAPE_ARMED.store(armed, Ordering::SeqCst);
     if !armed {
@@ -53,7 +53,7 @@ pub fn set_escape_armed(armed: bool) {
     update_hook_thread();
 }
 
-/// 前回呼び出し以降に Esc による緊急脱出が要求されたか
+/// 前回呼び出し以降に Esc による緊急停車が要求されたか
 pub fn take_escape_pressed() -> bool {
     ESCAPE_PRESSED.swap(false, Ordering::SeqCst)
 }
