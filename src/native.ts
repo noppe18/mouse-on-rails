@@ -63,6 +63,11 @@ export async function lockCursor(locked: boolean): Promise<void> {
   if (isTauri) await invoke("lock_cursor", { locked });
 }
 
+/** 乗車中かどうかを通知する。乗車中は Esc キーで緊急脱出できる */
+export async function setRiding(riding: boolean): Promise<void> {
+  if (isTauri) await invoke("set_riding", { riding });
+}
+
 export async function recordRide(): Promise<Progress> {
   if (!isTauri) {
     browserProgress.totalRides++;

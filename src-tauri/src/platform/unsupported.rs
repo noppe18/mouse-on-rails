@@ -8,6 +8,12 @@ pub fn set_cursor_pos(_x: i32, _y: i32) {}
 
 pub fn set_input_blocked(_blocked: bool) {}
 
+pub fn set_escape_armed(_armed: bool) {}
+
+pub fn take_escape_pressed() -> bool {
+    false
+}
+
 pub fn take_blocked_input_count() -> u32 {
     0
 }

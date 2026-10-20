@@ -25,6 +25,7 @@ struct Geometry {
 pub struct OverlayState {
     visible: AtomicBool,
     locked: AtomicBool,
+    riding: AtomicBool,
     geometry: Mutex<Geometry>,
     heartbeat: Mutex<Instant>,
 }
@@ -34,6 +35,7 @@ impl Default for OverlayState {
         Self {
             visible: AtomicBool::new(false),
             locked: AtomicBool::new(false),
+            riding: AtomicBool::new(false),
             geometry: Mutex::new(Geometry { origin_x: 0, origin_y: 0, scale: 1.0 }),
             heartbeat: Mutex::new(Instant::now()),
         }
@@ -58,6 +60,13 @@ impl OverlayState {
         }
         self.locked.store(locked, Ordering::SeqCst);
         platform::set_input_blocked(locked);
+    }
+
+    /// 乗車中は Esc キーによる緊急脱出を受け付ける
+    pub fn set_riding(&self, riding: bool) {
+        let riding = riding && self.is_visible();
+        self.riding.store(riding, Ordering::SeqCst);
+        platform::set_escape_armed(riding);
     }
 
     pub fn is_locked(&self) -> bool {
@@ -124,6 +133,7 @@ pub fn hide(app: &AppHandle) {
     let state = app.state::<OverlayState>();
     state.visible.store(false, Ordering::SeqCst);
     state.set_locked(false);
+    state.set_riding(false);
     if let Some(win) = window(app) {
         let _ = win.hide();
     }
@@ -138,7 +148,7 @@ pub fn toggle(app: &AppHandle) {
     }
 }
 
-/// カーソル位置の通知、抑止したマウス入力の通知、拘束のウォッチドッグを行う
+/// カーソル位置の通知、抑止したマウス入力の通知、緊急脱出、拘束のウォッチドッグを行う
 pub fn spawn_poller(app: AppHandle) {
     thread::spawn(move || {
         let mut last: Option<CursorPayload> = None;
@@ -150,6 +160,13 @@ pub fn spawn_poller(app: AppHandle) {
                 // フロントエンドが応答しない場合でも操作不能にしない
                 state.set_locked(false);
                 let _ = app.emit("lock-released", ());
+            }
+
+            if platform::take_escape_pressed() {
+                // Esc による緊急脱出（マウスはフック側で解放済み）
+                let _ = app.emit("emergency-escape", ());
+                hide(&app);
+                continue;
             }
 
             let blocked = platform::take_blocked_input_count();

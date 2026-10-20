@@ -119,7 +119,10 @@ function updateHud(now = performance.now() / 1000) {
       return chip;
     }),
   );
-  hud.hint.textContent = `${settings.hotkey} / Esc で閉じる（走行中は緊急停止）`;
+  hud.hint.textContent = session
+    ? "🚨 緊急脱出: Esc キー（いつでも降りられます）"
+    : `${settings.hotkey} / Esc で閉じる`;
+  hud.hint.classList.toggle("emergency", session !== null);
 }
 
 function toast(message: string) {
@@ -222,6 +225,7 @@ async function board(index: number, dir: Direction) {
 
   const now = performance.now() / 1000;
   session = new RideSession(layout, index, dir, operationConfig(), now);
+  void native.setRiding(true);
   moveCursor(layout.stations[index].point);
   sfx.door();
   announcer.playLine("door_closing");
@@ -286,6 +290,7 @@ function alight() {
   session = null;
   mode = "leaving";
   void native.lockCursor(false);
+  void native.setRiding(false);
   map.hideTrain();
   hud.status.textContent = `${stationName(s.stationIndex)} で下車しました`;
   hud.sub.textContent = "ご乗車ありがとうございました";
@@ -295,6 +300,7 @@ function alight() {
 
 function reset() {
   window.clearTimeout(leaveTimer);
+  if (session) void native.setRiding(false);
   session = null;
   mode = "idle";
   map.hideTrain();
@@ -324,7 +330,7 @@ async function main() {
     relayout();
   });
   native.events.onHidden(() => {
-    // ホットキー等で閉じられた場合、走行中なら緊急停止（拘束は Rust 側で解除済み）
+    // Esc・ホットキー等で閉じられた場合、走行中なら緊急停止（拘束は Rust 側で解除済み）
     if (session) toast("緊急停止しました");
     reset();
   });
