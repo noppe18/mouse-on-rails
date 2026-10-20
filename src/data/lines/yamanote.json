@@ -2,6 +2,11 @@
   "id": "yamanote",
   "name": "山手線",
   "color": "#80C241",
+  "sign": {
+    "code": "JY",
+    "barColor": "#1E8C3A",
+    "areaMark": "山"
+  },
   "loop": true,
   "shape": {
     "type": "roundedRect",
@@ -26,123 +31,227 @@
   "stations": [
     {
       "id": "ikebukuro",
-      "name": "池袋"
+      "name": "池袋",
+      "kana": "いけぶくろ",
+      "romaji": "Ikebukuro",
+      "number": 13,
+      "code": "IKB"
     },
     {
       "id": "otsuka",
-      "name": "大塚"
+      "name": "大塚",
+      "kana": "おおつか",
+      "romaji": "Ōtsuka",
+      "number": 12
     },
     {
       "id": "sugamo",
-      "name": "巣鴨"
+      "name": "巣鴨",
+      "kana": "すがも",
+      "romaji": "Sugamo",
+      "number": 11
     },
     {
       "id": "komagome",
-      "name": "駒込"
+      "name": "駒込",
+      "kana": "こまごめ",
+      "romaji": "Komagome",
+      "number": 10
     },
     {
       "id": "tabata",
-      "name": "田端"
+      "name": "田端",
+      "kana": "たばた",
+      "romaji": "Tabata",
+      "number": 9
     },
     {
       "id": "nishi-nippori",
-      "name": "西日暮里"
+      "name": "西日暮里",
+      "kana": "にしにっぽり",
+      "romaji": "Nishi-Nippori",
+      "number": 8
     },
     {
       "id": "nippori",
-      "name": "日暮里"
+      "name": "日暮里",
+      "kana": "にっぽり",
+      "romaji": "Nippori",
+      "number": 7,
+      "code": "NPR"
     },
     {
       "id": "uguisudani",
-      "name": "鶯谷"
+      "name": "鶯谷",
+      "kana": "うぐいすだに",
+      "romaji": "Uguisudani",
+      "number": 6
     },
     {
       "id": "ueno",
-      "name": "上野"
+      "name": "上野",
+      "kana": "うえの",
+      "romaji": "Ueno",
+      "number": 5,
+      "code": "UEN"
     },
     {
       "id": "okachimachi",
-      "name": "御徒町"
+      "name": "御徒町",
+      "kana": "おかちまち",
+      "romaji": "Okachimachi",
+      "number": 4
     },
     {
       "id": "akihabara",
-      "name": "秋葉原"
+      "name": "秋葉原",
+      "kana": "あきはばら",
+      "romaji": "Akihabara",
+      "number": 3,
+      "code": "AKB"
     },
     {
       "id": "kanda",
-      "name": "神田"
+      "name": "神田",
+      "kana": "かんだ",
+      "romaji": "Kanda",
+      "number": 2,
+      "code": "KND"
     },
     {
       "id": "tokyo",
-      "name": "東京"
+      "name": "東京",
+      "kana": "とうきょう",
+      "romaji": "Tōkyō",
+      "number": 1,
+      "code": "TYO"
     },
     {
       "id": "yurakucho",
-      "name": "有楽町"
+      "name": "有楽町",
+      "kana": "ゆうらくちょう",
+      "romaji": "Yūrakuchō",
+      "number": 30
     },
     {
       "id": "shimbashi",
-      "name": "新橋"
+      "name": "新橋",
+      "kana": "しんばし",
+      "romaji": "Shimbashi",
+      "number": 29,
+      "code": "SMB"
     },
     {
       "id": "hamamatsucho",
-      "name": "浜松町"
+      "name": "浜松町",
+      "kana": "はままつちょう",
+      "romaji": "Hamamatsuchō",
+      "number": 28,
+      "code": "HMC"
     },
     {
       "id": "tamachi",
-      "name": "田町"
+      "name": "田町",
+      "kana": "たまち",
+      "romaji": "Tamachi",
+      "number": 27
     },
     {
       "id": "takanawa-gateway",
-      "name": "高輪ゲートウェイ"
+      "name": "高輪ゲートウェイ",
+      "kana": "たかなわげーとうぇい",
+      "romaji": "Takanawa Gateway",
+      "number": 26,
+      "code": "TGW"
     },
     {
       "id": "shinagawa",
-      "name": "品川"
+      "name": "品川",
+      "kana": "しながわ",
+      "romaji": "Shinagawa",
+      "number": 25,
+      "code": "SGW"
     },
     {
       "id": "osaki",
-      "name": "大崎"
+      "name": "大崎",
+      "kana": "おおさき",
+      "romaji": "Ōsaki",
+      "number": 24,
+      "code": "OSK"
     },
     {
       "id": "gotanda",
-      "name": "五反田"
+      "name": "五反田",
+      "kana": "ごたんだ",
+      "romaji": "Gotanda",
+      "number": 23
     },
     {
       "id": "meguro",
-      "name": "目黒"
+      "name": "目黒",
+      "kana": "めぐろ",
+      "romaji": "Meguro",
+      "number": 22
     },
     {
       "id": "ebisu",
-      "name": "恵比寿"
+      "name": "恵比寿",
+      "kana": "えびす",
+      "romaji": "Ebisu",
+      "number": 21,
+      "code": "EBS"
     },
     {
       "id": "shibuya",
-      "name": "渋谷"
+      "name": "渋谷",
+      "kana": "しぶや",
+      "romaji": "Shibuya",
+      "number": 20,
+      "code": "SBY"
     },
     {
       "id": "harajuku",
-      "name": "原宿"
+      "name": "原宿",
+      "kana": "はらじゅく",
+      "romaji": "Harajuku",
+      "number": 19
     },
     {
       "id": "yoyogi",
-      "name": "代々木"
+      "name": "代々木",
+      "kana": "よよぎ",
+      "romaji": "Yoyogi",
+      "number": 18
     },
     {
       "id": "shinjuku",
-      "name": "新宿"
+      "name": "新宿",
+      "kana": "しんじゅく",
+      "romaji": "Shinjuku",
+      "number": 17,
+      "code": "SJK"
     },
     {
       "id": "shin-okubo",
-      "name": "新大久保"
+      "name": "新大久保",
+      "kana": "しんおおくぼ",
+      "romaji": "Shin-Ōkubo",
+      "number": 16
     },
     {
       "id": "takadanobaba",
-      "name": "高田馬場"
+      "name": "高田馬場",
+      "kana": "たかだのばば",
+      "romaji": "Takadanobaba",
+      "number": 15
     },
     {
       "id": "mejiro",
-      "name": "目白"
+      "name": "目白",
+      "kana": "めじろ",
+      "romaji": "Mejiro",
+      "number": 14
     }
   ]
 }

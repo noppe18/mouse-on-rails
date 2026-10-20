@@ -6,10 +6,20 @@ use std::sync::Mutex;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
+/// 設定ファイルの形式のバージョン。既定値を見直したら上げる
+const SETTINGS_VERSION: u32 = 2;
+
+fn legacy_version() -> u32 {
+    1
+}
+
 /// ユーザーが編集できる設定（settings.json）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Settings {
+    /// 設定ファイルの形式のバージョン（省略時は最初の版とみなす）
+    #[serde(default = "legacy_version")]
+    pub version: u32,
     /// 路線図を表示するグローバルホットキー
     pub hotkey: String,
     /// 乗車してから発車するまでの時間 [秒]
@@ -33,15 +43,16 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            version: SETTINGS_VERSION,
             hotkey: "Ctrl+Alt+M".into(),
             boarding_sec: 1.5,
-            dwell_sec: 2.5,
+            dwell_sec: 1.0,
             delay_probability: 0.15,
             delay_min_sec: 4.0,
             delay_max_sec: 10.0,
-            speed_px_per_sec: 600.0,
-            min_segment_sec: 1.0,
-            max_segment_sec: 3.5,
+            speed_px_per_sec: 200.0,
+            min_segment_sec: 3.0,
+            max_segment_sec: 10.5,
             volume: 0.9,
             speech_fallback: true,
         }
@@ -49,6 +60,19 @@ impl Default for Settings {
 }
 
 impl Settings {
+    /// 古い版の設定ファイルは、見直した走行速度と停車時間を新しい既定値にする
+    fn migrated(mut self) -> Self {
+        if self.version < 2 {
+            let d = Settings::default();
+            self.dwell_sec = d.dwell_sec;
+            self.speed_px_per_sec = d.speed_px_per_sec;
+            self.min_segment_sec = d.min_segment_sec;
+            self.max_segment_sec = d.max_segment_sec;
+        }
+        self.version = SETTINGS_VERSION;
+        self
+    }
+
     /// 不正な値や、ユーザーが長時間操作不能になる値を丸める
     fn sanitized(mut self) -> Self {
         let d = Settings::default();
@@ -59,8 +83,8 @@ impl Settings {
         self.delay_min_sec = fix(self.delay_min_sec, 0.0, 60.0, d.delay_min_sec);
         self.delay_max_sec = fix(self.delay_max_sec, self.delay_min_sec, 60.0, d.delay_max_sec);
         self.speed_px_per_sec = fix(self.speed_px_per_sec, 50.0, 5000.0, d.speed_px_per_sec);
-        self.min_segment_sec = fix(self.min_segment_sec, 0.2, 10.0, d.min_segment_sec);
-        self.max_segment_sec = fix(self.max_segment_sec, self.min_segment_sec, 20.0, d.max_segment_sec);
+        self.min_segment_sec = fix(self.min_segment_sec, 0.2, 30.0, d.min_segment_sec);
+        self.max_segment_sec = fix(self.max_segment_sec, self.min_segment_sec, 60.0, d.max_segment_sec);
         self.volume = fix(self.volume, 0.0, 1.0, d.volume);
         if self.hotkey.trim().is_empty() {
             self.hotkey = d.hotkey;
@@ -100,9 +124,12 @@ impl Store {
         let settings_path = dir.join("settings.json");
         let progress_path = dir.join("progress.json");
 
-        let settings = read_json::<Settings>(&settings_path).unwrap_or_default().sanitized();
-        // 設定ファイルが無ければ、編集の手がかりとして既定値で書き出す
-        if !settings_path.exists() {
+        let loaded = read_json::<Settings>(&settings_path);
+        // 書き損じで読めないファイルは上書きしない
+        let outdated = !settings_path.exists() || loaded.as_ref().is_some_and(|s| s.version < SETTINGS_VERSION);
+        let settings = loaded.unwrap_or_default().migrated().sanitized();
+        // 設定ファイルが無いか古ければ、編集の手がかりとして書き出す
+        if outdated {
             let _ = write_json(&settings_path, &settings);
         }
         let progress = read_json::<Progress>(&progress_path).unwrap_or_default();
@@ -115,6 +142,10 @@ impl Store {
 
     pub fn settings_path(&self) -> PathBuf {
         self.settings_path.clone()
+    }
+
+    pub fn log_path(&self) -> PathBuf {
+        self.settings_path.with_file_name("mouse-on-rails.log")
     }
 
     pub fn progress(&self) -> Progress {

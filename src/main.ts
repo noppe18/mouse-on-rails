@@ -7,6 +7,7 @@ import { newlyUnlocked } from "./domain/unlock.ts";
 import * as native from "./native.ts";
 import { Announcer, stationAnnouncementKey, stationAnnouncementText } from "./ui/announcer.ts";
 import { MapView, type BoardArrow } from "./ui/map.ts";
+import { buildStationSign } from "./ui/sign.ts";
 import { sfx } from "./ui/sfx.ts";
 
 const catalog = catalogJson as Catalog;
@@ -29,7 +30,8 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const map = new MapView(document.getElementById("map") as unknown as SVGSVGElement);
 const hud = {
   line: $("hud-line"),
-  status: $("hud-status"),
+  caption: $("hud-caption"),
+  sign: $("hud-sign"),
   sub: $("hud-sub"),
   hint: $("hud-hint"),
 };
@@ -58,6 +60,8 @@ let leaveTimer: number | undefined;
 /** 緊急停車の確認中に列車を止めた時刻 [s] */
 let pausedAt: number | null = null;
 let alarmTimer: number | undefined;
+/** 乗車前の HUD に駅名標を出す駅（カーソルに最も近い駅） */
+let idleStation = 0;
 
 function operationConfig(): OperationConfig {
   const { boardingSec, dwellSec, delayProbability, delayMinSec, delayMaxSec, speedPxPerSec, minSegmentSec, maxSegmentSec } = settings;
@@ -81,36 +85,64 @@ function directionDef(dir: Direction) {
   return dir === 1 ? currentLine.directions.forward : currentLine.directions.backward;
 }
 
-function updateHud(now = performance.now() / 1000) {
+/** HUD の駅名標。同じ内容なら作り直さない */
+let signKey = "";
+
+function renderSign(index: number, travel: Direction | null) {
+  const key = `${currentLine.id}:${index}:${travel}`;
+  if (key === signKey) return;
+  signKey = key;
+  const st = layout.stations[index].def;
+  // 進行方向が決まっていれば、次の駅を矢印側（右）に置く
+  const toRight = nextStationIndex(layout, index, travel ?? 1);
+  const toLeft = nextStationIndex(layout, index, travel === null ? -1 : (-travel as Direction));
+  const neighbor = (i: number | null) => (i === null ? null : { name: layout.stations[i].def.name, romaji: layout.stations[i].def.romaji });
+  hud.sign.replaceChildren(
+    buildStationSign({
+      lineCode: currentLine.sign?.code,
+      lineColor: currentLine.color,
+      barColor: currentLine.sign?.barColor ?? currentLine.color,
+      areaMark: currentLine.sign?.areaMark,
+      station: st,
+      left: neighbor(toLeft),
+      right: neighbor(toRight),
+      arrow: travel === null ? "none" : "right",
+    }),
+  );
+}
+
+function updateHud() {
   hud.line.textContent = currentLine.name;
   hud.line.style.setProperty("--line-color", currentLine.color);
 
   if (session) {
     const dir = directionDef(session.direction);
     hud.line.textContent = `${currentLine.name} ${dir.name}`;
-    const remain = Math.ceil(session.remaining(now));
+    if (session.phase === "running") {
+      renderSign(session.nextStation!, session.direction);
+    } else {
+      renderSign(session.stationIndex, session.direction);
+    }
     if (pausedAt !== null) {
-      hud.status.textContent = "⚠ 緊急停車の確認中";
+      hud.caption.textContent = "⚠ 緊急停車の確認中";
       hud.sub.textContent = "";
     } else if (session.phase === "running") {
-      hud.status.textContent = `次は ${stationName(session.nextStation)}`;
+      hud.caption.textContent = "次は";
       hud.sub.textContent = "走行中は下車できません";
+    } else if (session.phase === "delayed") {
+      hud.caption.textContent = "⚠ 発車見合わせ中";
+      hud.sub.textContent = session.departed ? "この駅で下車できます" : "乗車駅では下車できません";
     } else if (!session.departed) {
-      hud.status.textContent = `${stationName(session.stationIndex)} から乗車`;
-      hud.sub.textContent =
-        session.phase === "delayed"
-          ? `⚠ 発車見合わせ中 ・ 運転再開まで 約 ${remain} 秒`
-          : `発車まで ${remain} 秒 ・ 乗車駅では下車できません`;
-    } else if (session.phase === "dwelling") {
-      hud.status.textContent = `${stationName(session.stationIndex)} に停車中`;
-      hud.sub.textContent = `発車まで ${remain} 秒 ・ カーソルを列車から離すと下車`;
+      hud.caption.textContent = "まもなく発車します";
+      hud.sub.textContent = "乗車駅では下車できません";
     } else {
-      hud.status.textContent = `⚠ 発車見合わせ中（${stationName(session.stationIndex)}）`;
-      hud.sub.textContent = `運転再開まで 約 ${remain} 秒 ・ この駅で下車できます`;
+      hud.caption.textContent = "停車中";
+      hud.sub.textContent = "カーソルを列車から離すと下車";
     }
   } else if (mode === "idle") {
-    hud.status.textContent = "近くの駅にカーソルを合わせてください";
-    hud.sub.textContent = "線路沿いの矢印をクリックすると、その方向の列車に乗車します";
+    renderSign(idleStation, null);
+    hud.caption.textContent = "";
+    hud.sub.textContent = "駅にカーソルを合わせ、線路沿いの矢印で乗車";
   }
 
   hud.hint.textContent = session ? "🚨 緊急停車: Esc キー" : `${settings.hotkey} / Esc で閉じる`;
@@ -186,6 +218,10 @@ function onCursor(p: Point) {
 
   const near = nearestStation(layout, p);
   map.setNear(near.distance <= NEAR_RADIUS ? near.station.index : null);
+  if (near.station.index !== idleStation) {
+    idleStation = near.station.index;
+    updateHud();
+  }
 
   const stationEl = target?.closest<SVGElement>("[data-station]");
   if (stationEl) {
@@ -276,7 +312,7 @@ function tick(ts: number) {
     alight();
     return;
   }
-  updateHud(now);
+  updateHud();
   requestAnimationFrame(tick);
 }
 
@@ -288,9 +324,9 @@ function alight() {
   void native.lockCursor(false);
   void native.setRiding(false);
   map.hideTrain();
-  hud.status.textContent = `${stationName(s.stationIndex)} で下車しました`;
-  hud.sub.textContent = "ご乗車ありがとうございました";
   updateHud();
+  hud.caption.textContent = "ご乗車ありがとうございました";
+  hud.sub.textContent = `${stationName(s.stationIndex)} で下車しました`;
   announcer.playLine("thanks");
   leaveTimer = window.setTimeout(() => void native.hideOverlay(), 900);
 }

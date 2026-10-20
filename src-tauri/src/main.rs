@@ -1,6 +1,7 @@
 // リリースビルドではコンソールウィンドウを出さない
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod applog;
 mod commands;
 mod overlay;
 mod platform;
@@ -20,8 +21,13 @@ fn main() {
     let app = tauri::Builder::default()
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(|app, _shortcut, event| {
-                    if event.state() == ShortcutState::Pressed {
+                .with_handler(|app, shortcut, event| {
+                    if event.state() != ShortcutState::Pressed {
+                        return;
+                    }
+                    if *shortcut == overlay::escape_shortcut() {
+                        overlay::escape(app, "ホットキー");
+                    } else {
                         overlay::toggle(app);
                     }
                 })
@@ -40,6 +46,7 @@ fn main() {
         ])
         .setup(|app| {
             let store = Store::load(app.handle());
+            applog::init(store.log_path());
             let hotkey = store.settings().hotkey.clone();
             app.manage(store);
             app.manage(OverlayState::default());
@@ -73,11 +80,11 @@ fn main() {
 
 fn register_hotkey(app: &tauri::AppHandle, hotkey: &str) {
     let shortcut = hotkey.parse::<Shortcut>().unwrap_or_else(|e| {
-        eprintln!("ホットキー {hotkey:?} を解釈できません ({e})。{DEFAULT_HOTKEY} を使用します");
+        applog::write(&format!("ホットキー {hotkey:?} を解釈できません ({e})。{DEFAULT_HOTKEY} を使用します"));
         DEFAULT_HOTKEY.parse().expect("default hotkey")
     });
     if let Err(e) = app.global_shortcut().register(shortcut) {
-        eprintln!("ホットキーを登録できません: {e}");
+        applog::write(&format!("ホットキーを登録できません: {e}"));
     }
 }
 

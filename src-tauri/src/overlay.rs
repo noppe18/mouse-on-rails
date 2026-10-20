@@ -6,8 +6,9 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Shortcut};
 
-use crate::platform;
+use crate::{applog, platform};
 
 const WINDOW_LABEL: &str = "overlay";
 const POLL_INTERVAL: Duration = Duration::from_millis(16);
@@ -16,6 +17,13 @@ const HEARTBEAT_TIMEOUT: Duration = Duration::from_millis(1500);
 /// Esc 後、フロントエンドが確認ダイアログを出せないまま
 /// この時間が過ぎたら、確認なしで緊急停車する
 const EMERGENCY_ACK_TIMEOUT: Duration = Duration::from_millis(2000);
+/// キーボードフックとグローバルホットキーの両方から届く同じ Esc を1回として扱う
+const ESCAPE_DEBOUNCE: Duration = Duration::from_millis(300);
+
+/// 路線図の表示中だけグローバルホットキーとして登録する Esc
+pub fn escape_shortcut() -> Shortcut {
+    Shortcut::new(None, Code::Escape)
+}
 
 /// オーバーレイが覆っているモニターの物理座標と拡大率
 #[derive(Clone, Copy)]
@@ -30,6 +38,7 @@ pub struct OverlayState {
     locked: AtomicBool,
     riding: AtomicBool,
     emergency_requested: Mutex<Option<Instant>>,
+    last_escape: Mutex<Option<Instant>>,
     geometry: Mutex<Geometry>,
     heartbeat: Mutex<Instant>,
 }
@@ -41,6 +50,7 @@ impl Default for OverlayState {
             locked: AtomicBool::new(false),
             riding: AtomicBool::new(false),
             emergency_requested: Mutex::new(None),
+            last_escape: Mutex::new(None),
             geometry: Mutex::new(Geometry { origin_x: 0, origin_y: 0, scale: 1.0 }),
             heartbeat: Mutex::new(Instant::now()),
         }
@@ -131,6 +141,10 @@ pub fn show(app: &AppHandle) {
     }
 
     state.visible.store(true, Ordering::SeqCst);
+    // フォーカスが無くても Esc を受け取れるよう、表示中はグローバルホットキーにする
+    if let Err(e) = app.global_shortcut().register(escape_shortcut()) {
+        applog::write(&format!("Esc をホットキーとして登録できません: {e}"));
+    }
     let _ = win.set_ignore_cursor_events(true);
     let _ = win.show();
     let _ = win.set_always_on_top(true);
@@ -145,10 +159,39 @@ pub fn hide(app: &AppHandle) {
     state.set_locked(false);
     state.set_riding(false);
     state.ack_emergency();
+    let _ = app.global_shortcut().unregister(escape_shortcut());
     if let Some(win) = window(app) {
         let _ = win.hide();
     }
     let _ = app.emit("overlay-hidden", ());
+}
+
+/// Esc が押された。乗車中なら緊急停車の確認、それ以外なら路線図を閉じる
+pub fn escape(app: &AppHandle, source: &str) {
+    let state = app.state::<OverlayState>();
+    {
+        let mut last = state.last_escape.lock().unwrap();
+        if last.is_some_and(|t| t.elapsed() < ESCAPE_DEBOUNCE) {
+            return;
+        }
+        *last = Some(Instant::now());
+    }
+    let riding = state.riding.load(Ordering::SeqCst);
+    applog::write(&format!("Esc ({source}) 表示中={} 乗車中={riding}", state.is_visible()));
+    if !state.is_visible() {
+        return;
+    }
+    if !riding {
+        hide(app);
+        return;
+    }
+    // 緊急停車の要求。マウスはすぐに解放し、停車するかどうかは確認ダイアログで決める
+    state.set_locked(false);
+    *state.emergency_requested.lock().unwrap() = Some(Instant::now());
+    if let Some(win) = window(app) {
+        let _ = win.set_focus();
+    }
+    let _ = app.emit("emergency-request", ());
 }
 
 pub fn toggle(app: &AppHandle) {
@@ -170,18 +213,13 @@ pub fn spawn_poller(app: AppHandle) {
             if state.is_locked() && state.heartbeat.lock().unwrap().elapsed() > HEARTBEAT_TIMEOUT {
                 // フロントエンドが応答しない場合でも操作不能にしない
                 state.set_locked(false);
+                applog::write("ハートビート途絶のため拘束を解除");
                 let _ = app.emit("lock-released", ());
             }
 
             if platform::take_escape_pressed() {
-                // Esc による緊急停車の要求。マウスはフック側で解放済みで、
-                // 停車するかどうかはフロントエンドの確認ダイアログで決める
-                state.set_locked(false);
-                *state.emergency_requested.lock().unwrap() = Some(Instant::now());
-                if let Some(win) = window(&app) {
-                    let _ = win.set_focus();
-                }
-                let _ = app.emit("emergency-request", ());
+                // マウスはフック側で解放済み
+                escape(&app, "キーボードフック");
             }
 
             let unanswered = state
@@ -191,6 +229,7 @@ pub fn spawn_poller(app: AppHandle) {
                 .is_some_and(|t| t.elapsed() > EMERGENCY_ACK_TIMEOUT);
             if unanswered {
                 // 画面が応答しない場合は確認なしで停車する
+                applog::write("確認ダイアログの応答がないため緊急停車");
                 hide(&app);
                 continue;
             }

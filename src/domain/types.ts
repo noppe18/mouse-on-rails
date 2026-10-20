@@ -25,6 +25,11 @@ export type ShapeDef = RoundedRectShape | PolylineShape;
 export interface StationDef {
   id: string;
   name: string;
+  /** 駅名標用のよみがな・ローマ字・駅ナンバー・スリーレターコード */
+  kana?: string;
+  romaji?: string;
+  number?: number;
+  code?: string;
   /** 路線上の位置 (0..1)。省略時は stationLayout に従って配置 */
   t?: number;
 }
@@ -40,6 +45,8 @@ export interface LineDef {
   id: string;
   name: string;
   color: string;
+  /** 駅名標の表示設定 */
+  sign?: { code: string; barColor: string; areaMark?: string };
   loop: boolean;
   shape: ShapeDef;
   stationLayout?: { mode: "even"; startT?: number };

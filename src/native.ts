@@ -29,13 +29,13 @@ const browserProgress: Progress = { totalRides: 0, unlockedLines: ["yamanote"] }
 const browserSettings: Settings = {
   hotkey: "Ctrl+Alt+M",
   boardingSec: 1.5,
-  dwellSec: 2.5,
+  dwellSec: 1,
   delayProbability: 0.15,
   delayMinSec: 4,
   delayMaxSec: 10,
-  speedPxPerSec: 600,
-  minSegmentSec: 1,
-  maxSegmentSec: 3.5,
+  speedPxPerSec: 200,
+  minSegmentSec: 3,
+  maxSegmentSec: 10.5,
   volume: 0.9,
   speechFallback: true,
 };
