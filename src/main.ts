@@ -2,8 +2,8 @@ import "./styles.css";
 import catalogJson from "./data/catalog.json";
 import { layoutLine, nearestStation, nextStationIndex, type LineLayout } from "./domain/layout.ts";
 import { RideSession, type OperationConfig, type RideEvent } from "./domain/ride.ts";
-import type { Catalog, Direction, LineDef, Point } from "./domain/types.ts";
-import { newlyUnlocked } from "./domain/unlock.ts";
+import type { Catalog, CatalogEntry, Direction, LineDef, Point } from "./domain/types.ts";
+import { newlyUnlocked, unlockedLines } from "./domain/unlock.ts";
 import * as native from "./native.ts";
 import { Announcer, stationAnnouncementKey, stationAnnouncementText } from "./ui/announcer.ts";
 import { MapView, type BoardArrow } from "./ui/map.ts";
@@ -25,10 +25,13 @@ const ARROW_OFFSET = 42;
 const ARROWS_CLOSE_DELAY_MS = 350;
 const BLOCKED_WARNING_COOLDOWN_MS = 5000;
 const ALARM_INTERVAL_MS = 700;
+const DANGER_DURATION_MS = 2500;
+const LINE_STORAGE_KEY = "mouse-on-rails.line";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const map = new MapView(document.getElementById("map") as unknown as SVGSVGElement);
 const hud = {
+  lines: $("hud-lines"),
   line: $("hud-line"),
   caption: $("hud-caption"),
   sign: $("hud-sign"),
@@ -62,6 +65,12 @@ let pausedAt: number | null = null;
 let alarmTimer: number | undefined;
 /** 乗車前の HUD に駅名標を出す駅（カーソルに最も近い駅） */
 let idleStation = 0;
+let dangerTimer: number | undefined;
+/** 開業したがまだ知らせていない路線 */
+let pendingUnlocks: CatalogEntry[] = [];
+/** 開業後まだ乗っていない路線（路線切替に NEW を付ける） */
+const newLines = new Set<string>();
+let renderedTabs = "";
 
 function operationConfig(): OperationConfig {
   const { boardingSec, dwellSec, delayProbability, delayMinSec, delayMaxSec, speedPxPerSec, minSegmentSec, maxSegmentSec } = settings;
@@ -73,6 +82,8 @@ function operationConfig(): OperationConfig {
 function relayout() {
   layout = layoutLine(currentLine, window.innerWidth, window.innerHeight);
   map.render(layout, window.innerWidth, window.innerHeight);
+  // 路線を切り替えると駅数が変わる
+  idleStation = Math.min(idleStation, layout.stations.length - 1);
   closeArrows();
   updateHud();
 }
@@ -96,9 +107,16 @@ function renderSign(index: number, travel: Direction | null) {
   // 進行方向が決まっていれば、次の駅を矢印側（右）に置く
   const toRight = nextStationIndex(layout, index, travel ?? 1);
   const toLeft = nextStationIndex(layout, index, travel === null ? -1 : (-travel as Direction));
-  const neighbor = (i: number | null) => (i === null ? null : { name: layout.stations[i].def.name, romaji: layout.stations[i].def.romaji });
+  const neighbor = (i: number | null) => {
+    if (i === null) return null;
+    const { name, romaji, number } = layout.stations[i].def;
+    return { name, romaji, number };
+  };
   hud.sign.replaceChildren(
     buildStationSign({
+      style: currentLine.sign?.style ?? "jr-east",
+      lineName: currentLine.name,
+      lineNameEn: currentLine.nameEn,
       lineCode: currentLine.sign?.code,
       lineColor: currentLine.color,
       barColor: currentLine.sign?.barColor ?? currentLine.color,
@@ -114,6 +132,7 @@ function renderSign(index: number, travel: Direction | null) {
 function updateHud() {
   hud.line.textContent = currentLine.name;
   hud.line.style.setProperty("--line-color", currentLine.color);
+  updateLineTabs();
 
   if (session) {
     const dir = directionDef(session.direction);
@@ -149,12 +168,92 @@ function updateHud() {
   hud.hint.classList.toggle("emergency", session !== null);
 }
 
+// ---------- 路線の切り替え ----------
+
+/** 乗車できる路線（解放済みかつ路線データあり） */
+function playableLines(): LineDef[] {
+  return unlockedLines(catalog, progress.totalRides).flatMap((l) => (l.available && lines.has(l.id) ? [lines.get(l.id)!] : []));
+}
+
+function updateLineTabs() {
+  const playable = playableLines();
+  // 乗車中や路線が 1 つしか無いときは、切り替えを出さず路線名だけ表示する
+  const show = mode === "idle" && playable.length > 1;
+  const key = show ? `${playable.map((l) => l.id).join()}|${currentLine.id}|${[...newLines].join()}` : "";
+  hud.line.hidden = show;
+  hud.lines.hidden = !show;
+  if (key === renderedTabs) return;
+  renderedTabs = key;
+  hud.lines.replaceChildren(
+    ...(show ? playable : []).map((l) => {
+      const b = document.createElement("button");
+      b.className = "hud-line-tab";
+      b.dataset.line = l.id;
+      b.dataset.interactive = "";
+      b.style.setProperty("--line-color", l.color);
+      b.textContent = l.name;
+      b.classList.toggle("current", l.id === currentLine.id);
+      b.classList.toggle("is-new", newLines.has(l.id));
+      b.setAttribute("aria-pressed", String(l.id === currentLine.id));
+      return b;
+    }),
+  );
+}
+
+function switchLine(id: string) {
+  const line = lines.get(id);
+  if (!line || mode !== "idle" || !playableLines().includes(line)) return;
+  newLines.delete(id);
+  try {
+    localStorage.setItem(LINE_STORAGE_KEY, id);
+  } catch {
+    // 保存できなくても切り替えはできる
+  }
+  if (line === currentLine) {
+    updateHud();
+    return;
+  }
+  currentLine = line;
+  relayout();
+}
+
+function restoreLine() {
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(LINE_STORAGE_KEY);
+  } catch {
+    // 既定の山手線を使う
+  }
+  const line = saved ? lines.get(saved) : undefined;
+  if (line && playableLines().includes(line)) currentLine = line;
+}
+
+function announceUnlocks() {
+  if (pendingUnlocks.length === 0) return;
+  toast(`🎉 ${pendingUnlocks.map((l) => l.name).join("・")}が開業しました！`);
+  announcer.playLine("unlock");
+  pendingUnlocks = [];
+}
+
 function toast(message: string) {
   const t = document.createElement("div");
   t.className = "toast";
   t.textContent = message;
   $("toasts").appendChild(t);
   setTimeout(() => t.remove(), 4000);
+}
+
+/** 走行中に降りようとしたときの警告。押し続けている間は表示を延長する */
+function showDanger() {
+  const el = $("danger");
+  el.hidden = false;
+  window.clearTimeout(dangerTimer);
+  dangerTimer = window.setTimeout(hideDanger, DANGER_DURATION_MS);
+}
+
+function hideDanger() {
+  window.clearTimeout(dangerTimer);
+  $("danger").hidden = true;
 }
 
 // ---------- 乗車方向の矢印 ----------
@@ -258,10 +357,16 @@ async function board(index: number, dir: Direction) {
   announcer.playLine("door_closing");
   requestAnimationFrame(tick);
 
-  // 路線の解放は隠し要素。記録だけして画面には出さない
+  newLines.delete(currentLine.id);
+  // 新しい路線の開業は、乗車中には知らせず次に路線図を開いたときに知らせる
   progress = await native.recordRide();
   const fresh = newlyUnlocked(catalog, progress.totalRides, progress.unlockedLines);
-  if (fresh.length > 0) progress = await native.unlockLines(fresh.map((l) => l.id));
+  if (fresh.length > 0) {
+    progress = await native.unlockLines(fresh.map((l) => l.id));
+    const playable = fresh.filter((l) => l.available && lines.has(l.id));
+    pendingUnlocks.push(...playable);
+    for (const l of playable) newLines.add(l.id);
+  }
 }
 
 function handle(ev: RideEvent, s: RideSession) {
@@ -334,6 +439,7 @@ function alight() {
 function reset() {
   window.clearTimeout(leaveTimer);
   closeEmergency();
+  hideDanger();
   if (session) void native.setRiding(false);
   session = null;
   mode = "idle";
@@ -348,6 +454,7 @@ function reset() {
 function openEmergency() {
   // 応答したことを先に伝える（伝えないと Rust 側が確認なしで停車する）
   void native.ackEmergency();
+  hideDanger();
   if (!session) {
     void native.hideOverlay();
     return;
@@ -401,6 +508,7 @@ async function main() {
   announcer.volume = sfx.volume = settings.volume;
   announcer.speechFallback = settings.speechFallback;
   if (!progress.unlockedLines.includes("yamanote")) progress = await native.unlockLines(["yamanote"]);
+  restoreLine();
   relayout();
 
   window.addEventListener("resize", () => {
@@ -416,12 +524,17 @@ async function main() {
     const arrow = (e.target as Element).closest<SVGElement>("[data-board-dir]");
     if (arrow && arrowsStation !== null) void board(arrowsStation, Number(arrow.dataset.boardDir) as Direction);
   });
+  hud.lines.addEventListener("click", (e) => {
+    const tab = (e.target as Element).closest<HTMLElement>("[data-line]");
+    if (tab) switchLine(tab.dataset.line!);
+  });
   emergency.stop.addEventListener("click", confirmEmergency);
   emergency.cancel.addEventListener("click", cancelEmergency);
 
   native.events.onShown(() => {
     reset();
     relayout();
+    announceUnlocks();
   });
   native.events.onHidden(() => {
     if (session) toast("緊急停車しました");
@@ -432,17 +545,14 @@ async function main() {
   native.events.onMouseBlocked(() => {
     if (!session || session.canAlight || pausedAt !== null) return;
     map.shakeTrain();
+    // 乗車駅で発車を待っている間は、降りられないだけで警告はしない
+    if (session.atStation) return;
+    showDanger();
     const now = performance.now();
     if (now - lastBlockedWarning > BLOCKED_WARNING_COOLDOWN_MS) {
       lastBlockedWarning = now;
       sfx.buzzer();
-      if (session.atStation) {
-        announcer.playLine("no_alighting_origin");
-        toast("ご乗車になった駅ではお降りになれません");
-      } else {
-        announcer.playLine("no_alighting");
-        toast("危ないので駅以外では下車しないでください！");
-      }
+      announcer.playLine("no_alighting");
     }
   });
   native.events.onLockReleased(() => {

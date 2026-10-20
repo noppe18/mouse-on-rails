@@ -1,6 +1,7 @@
 {
   "id": "yamanote",
   "name": "山手線",
+  "nameEn": "Yamanote Line",
   "color": "#80C241",
   "sign": {
     "code": "JY",
@@ -27,6 +28,14 @@
       "label": "反時計回り",
       "name": "内回り"
     }
+  },
+  "vehicle": {
+    "model": "E235系",
+    "body": "#dfe4e8",
+    "band": "#80C241",
+    "doorBands": true,
+    "face": "#1f2428",
+    "faceAccent": "#80C241"
   },
   "stations": [
     {

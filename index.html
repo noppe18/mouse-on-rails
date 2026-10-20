@@ -9,6 +9,7 @@
     <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
     <section id="hud" aria-live="polite">
       <div class="hud-top">
+        <span id="hud-lines" class="hud-lines" hidden></span>
         <span id="hud-line" class="hud-line"></span>
         <span id="hud-caption" class="hud-caption"></span>
       </div>
@@ -28,6 +29,13 @@
         </div>
       </div>
       <div class="hazard"></div>
+    </div>
+    <div id="danger" hidden role="alert">
+      <div class="danger-box">
+        <div class="danger-title">⚠ 危険 ⚠</div>
+        <div class="danger-lead">走行中の列車からは降りられません</div>
+        <div class="danger-message">危ないので駅以外では下車しないでください！</div>
+      </div>
     </div>
     <div id="toasts"></div>
     <script type="module" src="/src/main.ts"></script>

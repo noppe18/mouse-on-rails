@@ -136,21 +136,25 @@ body {
 }
 
 .car {
-  fill: #e9edf0;
   stroke: #2b3136;
   stroke-width: 2;
-}
-
-.car-stripe {
-  fill: var(--line-color);
 }
 
 .car-window {
   fill: #2b3a48;
 }
 
-.car-front {
-  fill: #2b3136;
+.car-face {
+  stroke: #2b3136;
+  stroke-width: 1;
+}
+
+.car-front-window {
+  fill: #141a20;
+}
+
+.car-light {
+  fill: #fff6c8;
 }
 
 .train[data-state="delayed"] .car {
@@ -198,6 +202,60 @@ body {
   color: #fff;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.hud-lines {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.hud-lines[hidden],
+.hud-line[hidden] {
+  display: none;
+}
+
+.hud-line-tab {
+  position: relative;
+  padding: 3px 14px;
+  border: 2px solid var(--line-color);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--panel-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.hud-line-tab:hover {
+  background: color-mix(in srgb, var(--line-color) 35%, transparent);
+}
+
+.hud-line-tab.current {
+  background: var(--line-color);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.hud-line-tab.is-new::after {
+  content: "NEW";
+  position: absolute;
+  top: -9px;
+  right: -8px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: #e53935;
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-shadow: none;
+  animation: new-badge 1s ease-in-out infinite alternate;
+}
+
+@keyframes new-badge {
+  to { transform: scale(1.15); }
 }
 
 .hud-caption:not(:empty) {
@@ -264,6 +322,69 @@ body {
   0% { opacity: 0; transform: translateY(-8px); }
   8%, 85% { opacity: 1; transform: none; }
   100% { opacity: 0; }
+}
+
+#danger {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 15;
+  pointer-events: none;
+  animation: danger-vignette 0.5s steps(1) infinite;
+}
+
+#danger[hidden] {
+  display: none;
+}
+
+@keyframes danger-vignette {
+  0% { box-shadow: inset 0 0 0 14px #ff1a1a, inset 0 0 160px 40px rgba(255, 0, 0, 0.75); }
+  50% { box-shadow: inset 0 0 0 14px #ffd400, inset 0 0 120px 20px rgba(255, 0, 0, 0.35); }
+}
+
+.danger-box {
+  padding: 24px 44px;
+  border: 8px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(#1a0000, #1a0000) padding-box,
+    repeating-linear-gradient(-45deg, #ffd400 0 16px, #111 16px 32px) border-box;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(255, 0, 0, 0.9);
+  animation: danger-pop 0.25s ease-out, shake 0.35s linear 0.25s infinite;
+}
+
+@keyframes danger-pop {
+  0% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.danger-title {
+  font-size: 64px;
+  font-weight: 900;
+  color: #ff3b30;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 20px rgba(255, 59, 48, 0.95);
+  animation: danger-blink 0.5s steps(1) infinite;
+}
+
+@keyframes danger-blink {
+  50% { color: #ffd400; text-shadow: 0 0 20px rgba(255, 212, 0, 0.95); }
+}
+
+.danger-lead {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.danger-message {
+  margin-top: 6px;
+  font-size: 30px;
+  font-weight: 900;
+  color: #ffd400;
 }
 
 #emergency {

@@ -1,0 +1,246 @@
+{
+  "id": "chuo",
+  "name": "中央線快速",
+  "nameEn": "Chuo Line (Rapid)",
+  "color": "#F15A22",
+  "sign": {
+    "code": "JC",
+    "barColor": "#C4410E"
+  },
+  "loop": false,
+  "shape": {
+    "type": "polyline",
+    "closed": false,
+    "points": [
+      [0.94, 0.34],
+      [0.925, 0.27],
+      [0.89, 0.23],
+      [0.85, 0.22],
+      [0.81, 0.22],
+      [0.77, 0.22],
+      [0.73, 0.22],
+      [0.69, 0.22],
+      [0.65, 0.22],
+      [0.61, 0.22],
+      [0.57, 0.22],
+      [0.53, 0.22],
+      [0.49, 0.22],
+      [0.45, 0.22],
+      [0.41, 0.22],
+      [0.37, 0.22],
+      [0.33, 0.22],
+      [0.29, 0.22],
+      [0.25, 0.22],
+      [0.21, 0.235],
+      [0.175, 0.26],
+      [0.14, 0.29],
+      [0.105, 0.31],
+      [0.07, 0.33]
+    ]
+  },
+  "stationLayout": {
+    "mode": "vertices"
+  },
+  "labelSide": "alternate",
+  "directions": {
+    "forward": {
+      "label": "高尾方面",
+      "name": "下り"
+    },
+    "backward": {
+      "label": "東京方面",
+      "name": "上り"
+    }
+  },
+  "vehicle": {
+    "model": "E233系",
+    "body": "#dfe4e8",
+    "band": "#F15A22",
+    "topBand": "#F15A22",
+    "face": "#F15A22",
+    "faceAccent": "#1f2428"
+  },
+  "stations": [
+    {
+      "id": "tokyo",
+      "name": "東京",
+      "kana": "とうきょう",
+      "romaji": "Tōkyō",
+      "number": 1,
+      "code": "TYO"
+    },
+    {
+      "id": "kanda",
+      "name": "神田",
+      "kana": "かんだ",
+      "romaji": "Kanda",
+      "number": 2,
+      "code": "KND"
+    },
+    {
+      "id": "ochanomizu",
+      "name": "御茶ノ水",
+      "kana": "おちゃのみず",
+      "romaji": "Ochanomizu",
+      "number": 3,
+      "code": "OCH"
+    },
+    {
+      "id": "yotsuya",
+      "name": "四ツ谷",
+      "kana": "よつや",
+      "romaji": "Yotsuya",
+      "number": 4,
+      "code": "YTY"
+    },
+    {
+      "id": "shinjuku",
+      "name": "新宿",
+      "kana": "しんじゅく",
+      "romaji": "Shinjuku",
+      "number": 5,
+      "code": "SJK"
+    },
+    {
+      "id": "nakano",
+      "name": "中野",
+      "kana": "なかの",
+      "romaji": "Nakano",
+      "number": 6,
+      "code": "NKN"
+    },
+    {
+      "id": "koenji",
+      "name": "高円寺",
+      "kana": "こうえんじ",
+      "romaji": "Kōenji",
+      "number": 7
+    },
+    {
+      "id": "asagaya",
+      "name": "阿佐ケ谷",
+      "kana": "あさがや",
+      "romaji": "Asagaya",
+      "number": 8
+    },
+    {
+      "id": "ogikubo",
+      "name": "荻窪",
+      "kana": "おぎくぼ",
+      "romaji": "Ogikubo",
+      "number": 9,
+      "code": "OGK"
+    },
+    {
+      "id": "nishi-ogikubo",
+      "name": "西荻窪",
+      "kana": "にしおぎくぼ",
+      "romaji": "Nishi-Ogikubo",
+      "number": 10
+    },
+    {
+      "id": "kichijoji",
+      "name": "吉祥寺",
+      "kana": "きちじょうじ",
+      "romaji": "Kichijōji",
+      "number": 11,
+      "code": "KCJ"
+    },
+    {
+      "id": "mitaka",
+      "name": "三鷹",
+      "kana": "みたか",
+      "romaji": "Mitaka",
+      "number": 12,
+      "code": "MTK"
+    },
+    {
+      "id": "musashi-sakai",
+      "name": "武蔵境",
+      "kana": "むさしさかい",
+      "romaji": "Musashi-Sakai",
+      "number": 13
+    },
+    {
+      "id": "higashi-koganei",
+      "name": "東小金井",
+      "kana": "ひがしこがねい",
+      "romaji": "Higashi-Koganei",
+      "number": 14
+    },
+    {
+      "id": "musashi-koganei",
+      "name": "武蔵小金井",
+      "kana": "むさしこがねい",
+      "romaji": "Musashi-Koganei",
+      "number": 15
+    },
+    {
+      "id": "kokubunji",
+      "name": "国分寺",
+      "kana": "こくぶんじ",
+      "romaji": "Kokubunji",
+      "number": 16,
+      "code": "KBJ"
+    },
+    {
+      "id": "nishi-kokubunji",
+      "name": "西国分寺",
+      "kana": "にしこくぶんじ",
+      "romaji": "Nishi-Kokubunji",
+      "number": 17
+    },
+    {
+      "id": "kunitachi",
+      "name": "国立",
+      "kana": "くにたち",
+      "romaji": "Kunitachi",
+      "number": 18
+    },
+    {
+      "id": "tachikawa",
+      "name": "立川",
+      "kana": "たちかわ",
+      "romaji": "Tachikawa",
+      "number": 19,
+      "code": "TCK"
+    },
+    {
+      "id": "hino",
+      "name": "日野",
+      "kana": "ひの",
+      "romaji": "Hino",
+      "number": 20
+    },
+    {
+      "id": "toyoda",
+      "name": "豊田",
+      "kana": "とよだ",
+      "romaji": "Toyoda",
+      "number": 21
+    },
+    {
+      "id": "hachioji",
+      "name": "八王子",
+      "kana": "はちおうじ",
+      "romaji": "Hachiōji",
+      "number": 22,
+      "code": "HJJ"
+    },
+    {
+      "id": "nishi-hachioji",
+      "name": "西八王子",
+      "kana": "にしはちおうじ",
+      "romaji": "Nishi-Hachiōji",
+      "number": 23
+    },
+    {
+      "id": "takao",
+      "name": "高尾",
+      "kana": "たかお",
+      "romaji": "Takao",
+      "number": 24,
+      "code": "TKO"
+    }
+  ]
+}

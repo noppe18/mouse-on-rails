@@ -41,17 +41,57 @@ export interface DirectionDef {
   name: string;
 }
 
+/**
+ * 駅の配置方法。
+ * even: 路線上に等間隔（startT から）
+ * vertices: polyline の各頂点に 1 駅ずつ（頂点数 = 駅数）
+ */
+export type StationLayoutDef = { mode: "even"; startT?: number } | { mode: "vertices" };
+
+/** 駅名標の表示設定 */
+export interface SignDef {
+  /** デザイン。省略時は JR 東日本風 */
+  style?: "jr-east" | "tokyo-metro";
+  /** 路線記号（例: JY, N） */
+  code: string;
+  /** 帯の色 */
+  barColor: string;
+  /** 特定都区市内の表示（例: 山） */
+  areaMark?: string;
+}
+
+/** 車両の塗装 */
+export interface VehicleDef {
+  /** 形式名（表示用） */
+  model: string;
+  body: string;
+  /** 窓下の帯 */
+  band: string;
+  /** 窓上の帯 */
+  topBand?: string;
+  /** 窓下の帯に添える細帯 */
+  subBand?: string;
+  /** ドア部分を帯色で塗る（E235 系風） */
+  doorBands?: boolean;
+  /** 前面の色 */
+  face: string;
+  faceAccent: string;
+}
+
 export interface LineDef {
   id: string;
   name: string;
+  nameEn: string;
   color: string;
-  /** 駅名標の表示設定 */
-  sign?: { code: string; barColor: string; areaMark?: string };
+  sign?: SignDef;
   loop: boolean;
   shape: ShapeDef;
-  stationLayout?: { mode: "even"; startT?: number };
+  stationLayout?: StationLayoutDef;
+  /** 駅名ラベルの位置。alternate は路線の両側へ交互に置く（駅間の狭い横長の路線向け） */
+  labelSide?: "inward" | "alternate";
   /** forward = stations 配列の順方向 */
   directions: { forward: DirectionDef; backward: DirectionDef };
+  vehicle: VehicleDef;
   stations: StationDef[];
 }
 

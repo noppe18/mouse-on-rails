@@ -8,9 +8,14 @@ const NAME_SIZE = 50;
 export interface SignNeighbor {
   name: string;
   romaji?: string;
+  number?: number;
 }
 
 export interface StationSignData {
+  /** デザイン（JR 東日本風 / 東京メトロ風） */
+  style: "jr-east" | "tokyo-metro";
+  lineName: string;
+  lineNameEn: string;
   /** 路線記号（例: JY） */
   lineCode?: string;
   /** 駅ナンバリングの枠と帯中央の色 */
@@ -98,13 +103,80 @@ function bar(svg: SVGSVGElement, data: StationSignData) {
   }
 }
 
-/** 駅名標の SVG を生成する */
-export function buildStationSign(data: StationSignData): SVGSVGElement {
+function signRoot(data: StationSignData): SVGSVGElement {
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("viewBox", `0 0 ${WIDTH} ${HEIGHT}`);
   svg.setAttribute("class", "station-sign");
   svg.setAttribute("role", "img");
   svg.setAttribute("aria-label", `${data.station.name}駅`);
+  return svg;
+}
+
+/** 駅名を最大幅に収める属性 */
+function fitName(attrs: Record<string, string | number>, length: number, size: number, maxWidth: number) {
+  if (length * size > maxWidth) {
+    attrs.textLength = maxWidth;
+    attrs.lengthAdjust = "spacingAndGlyphs";
+  }
+  return attrs;
+}
+
+/** 東京メトロ風の丸い駅ナンバリング */
+function metroBadge(parent: Element, code: string, number: number, cx: number, cy: number, r: number, color: string) {
+  const g = el("g", { class: "sign-badge" }, parent);
+  el("circle", { cx, cy, r, fill: "#fff", stroke: color, "stroke-width": r * 0.3 }, g);
+  el("text", { x: cx, y: cy - r * 0.12, "text-anchor": "middle", fill: "#222", "font-size": r * 0.5, "font-weight": 700 }, g, code);
+  el(
+    "text",
+    { x: cx, y: cy + r * 0.5, "text-anchor": "middle", fill: "#222", "font-size": r * 0.72, "font-weight": 900 },
+    g,
+    String(number).padStart(2, "0"),
+  );
+}
+
+/** 東京メトロ風: 上部に路線名の帯、丸い駅ナンバリング、下部の灰色の帯に隣の駅 */
+function buildMetroSign(data: StationSignData): SVGSVGElement {
+  const svg = signRoot(data);
+  const { station, lineColor, lineCode } = data;
+  el("rect", { x: 3, y: 3, width: WIDTH - 6, height: HEIGHT - 6, rx: 8, fill: "#fff", stroke: "#3a3f44", "stroke-width": 4 }, svg);
+  el("path", { d: `M3,36 V11 Q3,3 11,3 H${WIDTH - 11} Q${WIDTH - 3},3 ${WIDTH - 3},11 V36 Z`, fill: lineColor }, svg);
+  el("text", { x: 22, y: 26, fill: "#fff", "font-size": 17, "font-weight": 900 }, svg, data.lineName);
+  el("text", { x: 22 + data.lineName.length * 17 + 12, y: 26, fill: "#fff", "font-size": 13, "font-weight": 700 }, svg, data.lineNameEn);
+
+  if (lineCode && station.number !== undefined) metroBadge(svg, lineCode, station.number, 78, 88, 32, lineColor);
+  el("text", fitName({ x: WIDTH / 2 + 30, y: 98, "text-anchor": "middle", fill: "#111", "font-size": 46, "font-weight": 900 }, station.name.length, 46, 380), svg, station.name);
+  if (station.kana) {
+    el("text", { x: WIDTH / 2 + 30, y: 122, "text-anchor": "middle", fill: "#333", "font-size": 13, "font-weight": 700, "letter-spacing": "0.15em" }, svg, station.kana);
+  }
+  if (station.romaji) {
+    el("text", { x: WIDTH / 2 + 30, y: 143, "text-anchor": "middle", fill: "#111", "font-size": 17, "font-weight": 700 }, svg, station.romaji);
+  }
+
+  // 隣の駅
+  el("rect", { x: 5, y: 152, width: WIDTH - 10, height: 43, fill: "#eef1f3" }, svg);
+  el("rect", { x: 5, y: 152, width: WIDTH - 10, height: 4, fill: lineColor }, svg);
+  const side = (n: SignNeighbor | null, right: boolean) => {
+    if (!n) return;
+    const pointed = data.arrow === (right ? "right" : "left");
+    const edge = right ? WIDTH - 22 : 22;
+    const dir = right ? -1 : 1;
+    if (pointed) el("text", { x: edge, y: 182, "text-anchor": right ? "end" : "start", fill: lineColor, "font-size": 18, "font-weight": 900 }, svg, right ? "▶" : "◀");
+    const badgeX = edge + dir * (pointed ? 36 : 14);
+    if (lineCode && n.number !== undefined) metroBadge(svg, lineCode, n.number, badgeX, 176, 13, lineColor);
+    const textX = badgeX + dir * 20;
+    const anchor = right ? "end" : "start";
+    el("text", { x: textX, y: 175, "text-anchor": anchor, fill: "#111", "font-size": 16, "font-weight": 700 }, svg, n.name);
+    if (n.romaji) el("text", { x: textX, y: 190, "text-anchor": anchor, fill: "#333", "font-size": 11 }, svg, n.romaji);
+  };
+  side(data.left, false);
+  side(data.right, true);
+  return svg;
+}
+
+/** 駅名標の SVG を生成する */
+export function buildStationSign(data: StationSignData): SVGSVGElement {
+  if (data.style === "tokyo-metro") return buildMetroSign(data);
+  const svg = signRoot(data);
 
   el("rect", { x: 3, y: 3, width: WIDTH - 6, height: HEIGHT - 6, rx: 6, fill: "#fff", stroke: "#222", "stroke-width": 6 }, svg);
 

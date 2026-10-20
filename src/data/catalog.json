@@ -11,7 +11,13 @@
       "id": "chuo",
       "name": "中央線快速",
       "color": "#F15A22",
-      "available": false
+      "available": true
+    },
+    {
+      "id": "namboku",
+      "name": "南北線",
+      "color": "#00ADA9",
+      "available": true
     },
     {
       "id": "sobu",

@@ -1,5 +1,5 @@
 import { buildPath, Path } from "./geometry.ts";
-import type { Direction, LineDef, Point, StationDef } from "./types.ts";
+import type { Direction, LineDef, Point, StationDef, StationLayoutDef } from "./types.ts";
 
 export interface StationLayout {
   def: StationDef;
@@ -21,11 +21,21 @@ export interface LineLayout {
 export function layoutLine(line: LineDef, width: number, height: number): LineLayout {
   const path = buildPath(line.shape, width, height);
   const n = line.stations.length;
-  const startT = line.stationLayout?.startT ?? 0;
+  const mode: StationLayoutDef = line.stationLayout ?? { mode: "even" };
+  if (mode.mode === "vertices" && path.cumulative.length - (path.closed ? 1 : 0) !== n) {
+    throw new Error(`${line.id}: 頂点数と駅数が一致しません`);
+  }
+  const startT = mode.mode === "even" ? (mode.startT ?? 0) : 0;
   const stations = line.stations.map((def, index) => {
-    const evenT = line.loop ? startT + index / n : startT + (index / Math.max(n - 1, 1)) * (1 - startT);
-    const t = def.t ?? evenT;
-    const s = path.normalize(t * path.length);
+    let s: number;
+    if (def.t !== undefined) {
+      s = path.normalize(def.t * path.length);
+    } else if (mode.mode === "vertices") {
+      s = path.cumulative[index];
+    } else {
+      const t = line.loop ? startT + index / n : startT + (index / Math.max(n - 1, 1)) * (1 - startT);
+      s = path.normalize(t * path.length);
+    }
     const tan = path.tangentAt(s);
     // 時計回りの経路では (-ty, tx) が内側
     return { def, index, s, point: path.pointAt(s), inward: { x: -tan.y, y: tan.x } };

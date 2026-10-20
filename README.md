@@ -88,10 +88,11 @@ src-tauri/src/
 
 - **カーソルの拘束**: 走行中だけ `WH_MOUSE_LL` フックを設置し、物理マウス入力（`LLMHF_INJECTED` でないもの）を破棄します。カーソルは `SetCursorPos` で車両に追従させます。停車・下車・緊急停止・タイムアウトで拘束を解除します。
 - **Esc / 緊急停車**: 路線図の表示中は `Esc` をグローバルホットキーとして登録し、フォーカスに関係なく受け取ります。乗車中はさらに `WH_KEYBOARD_LL` フックでも監視し、フック内で即座にマウスの拘束を解きます（両方から届いた Esc は 1 回として扱います）。その後確認ダイアログを出し、WebView が 2 秒以内に応答しない場合は Rust 側で停車させます。
-- **駅名標**: 画面中央の案内は、路線データの駅ナンバー・よみがな・ローマ字・スリーレターコードから `src/ui/sign.ts` が SVG で生成します。
-- **路線の解放**: 累計 3 回乗車するごとに 1 路線を解放します（`catalog.json` の `ridesPerUnlock`）。隠し要素なので画面には表示せず、`progress.json` に記録だけします。
+- **駅名標**: 画面中央の案内は、路線データの駅ナンバー・よみがな・ローマ字・スリーレターコードから `src/ui/sign.ts` が SVG で生成します。路線の `sign.style` で JR 東日本風（`jr-east`）か東京メトロ風（`tokyo-metro`）を選べます。
+- **路線の解放**: 累計 3 回乗車するごとに `catalog.json` の順に 1 路線を解放します（`ridesPerUnlock`。3 回で中央線快速、6 回で南北線）。解放は事前には知らせず、開業した次に路線図を開いたときにお知らせし、路線図の中央で路線を切り替えられるようになります。
 - **クリック透過**: 路線図表示中も、駅とポップアップの上以外ではクリックが背後のアプリに届きます。
-- **路線の追加**: `src/data/lines/` に JSON を追加し、`catalog.json` の `available` を `true` にします。形状は `roundedRect` か正規化座標の `polyline` で記述できます。
+- **路線の追加**: `src/data/lines/` に JSON を追加し、`catalog.json` の `available` を `true` にします。形状は `roundedRect` か正規化座標の `polyline` で記述できます（`stationLayout.mode: "vertices"` で各頂点に駅を置く）。
+  路線には車両の塗装（`vehicle`）と駅名標の設定（`sign`）を指定します。
 - **音声**: `src/assets/audio/` に音声ファイルを置くと同梱されます。Gemini TTS で生成するには `GEMINI_API_KEY=... npm run voices`。
 
 ### リリース
