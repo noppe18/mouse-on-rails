@@ -17,6 +17,8 @@ const lines = new Map(Object.values(lineFiles).map((l) => [l.id, l]));
 const ALIGHT_RADIUS = 44;
 /** この距離以内の駅を「近くの駅」として強調 [CSS px] */
 const NEAR_RADIUS = 280;
+/** 停車直後は下車判定しない [s]（カーソル移動前の古い座標イベントで誤判定しないため） */
+const ALIGHT_GRACE_SEC = 0.3;
 const POPUP_CLOSE_DELAY_MS = 350;
 const BLOCKED_WARNING_COOLDOWN_MS = 5000;
 
@@ -267,7 +269,10 @@ function tick(ts: number) {
   if (s.phase === "running") {
     // 実際の OS カーソルを車両に追従させる（Rust 側へのハートビートも兼ねる）
     moveCursor(pose.point);
-  } else if (Math.hypot(cursor.x - pose.point.x, cursor.y - pose.point.y) > ALIGHT_RADIUS) {
+  } else if (
+    now - s.phaseStart > ALIGHT_GRACE_SEC &&
+    Math.hypot(cursor.x - pose.point.x, cursor.y - pose.point.y) > ALIGHT_RADIUS
+  ) {
     alight();
     return;
   }
