@@ -1,4 +1,4 @@
-import type { Point, ShapeDef } from "./types.ts";
+import type { Point, RoundedRectShape, ShapeDef } from "./types.ts";
 
 /** 弧長でパラメータ化された折れ線 */
 export class Path {
@@ -87,13 +87,23 @@ export function roundedRectPoints(x0: number, y0: number, x1: number, y1: number
   return [last, ...pts];
 }
 
-export function buildPath(shape: ShapeDef, width: number, height: number): Path {
+/** 角丸長方形の路線を描く範囲（画面の端から余白をとる） */
+export function roundedRectFrame(shape: RoundedRectShape, width: number, height: number) {
+  const margin = Math.max(Math.min(width, height) * shape.margin, shape.minMarginPx ?? 0);
+  return { x0: margin, y0: margin, x1: width - margin, y1: height - margin };
+}
+
+export function buildPath(
+  shape: Exclude<ShapeDef, { type: "route" }>,
+  width: number,
+  height: number,
+  frame?: { x0: number; y0: number; x1: number; y1: number },
+): Path {
   switch (shape.type) {
     case "roundedRect": {
-      const base = Math.min(width, height);
-      const margin = Math.max(base * shape.margin, shape.minMarginPx ?? 0);
-      const r = base * shape.cornerRadius;
-      return new Path(roundedRectPoints(margin, margin, width - margin, height - margin, r), true);
+      const f = frame ?? roundedRectFrame(shape, width, height);
+      const r = Math.min(width, height) * shape.cornerRadius;
+      return new Path(roundedRectPoints(f.x0, f.y0, f.x1, f.y1, r), true);
     }
     case "polyline":
       return new Path(

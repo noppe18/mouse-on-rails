@@ -20,7 +20,37 @@ export interface PolylineShape {
   points: [number, number][];
 }
 
-export type ShapeDef = RoundedRectShape | PolylineShape;
+/**
+ * 経路の頂点。駅（station あり）か曲がり角（station なし）。
+ * 座標は数値なら山手線の環（角丸長方形）に対する比率（0 = 左端/上端, 1 = 右端/下端）、
+ * 文字列なら既に配置した駅の座標（"路線ID:駅ID"、同じ路線なら "駅ID"）。
+ * dx / dy は駅間隔を単位にしたずれ。
+ */
+export interface RouteNode {
+  station?: string;
+  /** 指定した路線の同じ駅に置く（例: "yamanote"） */
+  at?: string;
+  x?: number | string;
+  y?: number | string;
+  dx?: number;
+  dy?: number;
+  /**
+   * 前後の頂点を、縦横の直線と 45° の斜線でつなぐ曲がり角。
+   * diag-first は斜線から、diag-last は直線から始める
+   */
+  via?: "diag-first" | "diag-last";
+}
+
+/**
+ * 他の路線の駅を基準に、縦横と 45° の直線でデフォルメした経路。
+ * 経路に書かない駅は、前後の駅の間に等間隔で置く
+ */
+export interface RouteShape {
+  type: "route";
+  nodes: RouteNode[];
+}
+
+export type ShapeDef = RoundedRectShape | PolylineShape | RouteShape;
 
 export interface StationDef {
   id: string;
@@ -40,13 +70,6 @@ export interface DirectionDef {
   /** 鉄道としての呼び名（例: 外回り） */
   name: string;
 }
-
-/**
- * 駅の配置方法。
- * even: 路線上に等間隔（startT から）
- * vertices: polyline の各頂点に 1 駅ずつ（頂点数 = 駅数）
- */
-export type StationLayoutDef = { mode: "even"; startT?: number } | { mode: "vertices" };
 
 /** 駅名標の表示設定 */
 export interface SignDef {
@@ -86,7 +109,7 @@ export interface LineDef {
   sign?: SignDef;
   loop: boolean;
   shape: ShapeDef;
-  stationLayout?: StationLayoutDef;
+  stationLayout?: { mode: "even"; startT?: number };
   /** 駅名ラベルの位置。alternate は路線の両側へ交互に置く（駅間の狭い横長の路線向け） */
   labelSide?: "inward" | "alternate";
   /** forward = stations 配列の順方向 */

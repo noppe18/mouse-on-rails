@@ -33,9 +33,9 @@ const browserSettings: Settings = {
   delayProbability: 0.15,
   delayMinSec: 4,
   delayMaxSec: 10,
-  speedPxPerSec: 200,
-  minSegmentSec: 3,
-  maxSegmentSec: 10.5,
+  speedPxPerSec: 100,
+  minSegmentSec: 6,
+  maxSegmentSec: 21,
   volume: 0.9,
   speechFallback: true,
 };

@@ -1,5 +1,5 @@
 import { buildPath, Path } from "./geometry.ts";
-import type { Direction, LineDef, Point, StationDef, StationLayoutDef } from "./types.ts";
+import type { Direction, LineDef, Point, StationDef } from "./types.ts";
 
 export interface StationLayout {
   def: StationDef;
@@ -17,28 +17,34 @@ export interface LineLayout {
   stations: StationLayout[];
 }
 
-/** 路線データを画面サイズに合わせて配置する */
-export function layoutLine(line: LineDef, width: number, height: number): LineLayout {
-  const path = buildPath(line.shape, width, height);
+/** 画面上の長方形 */
+export interface Rect {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** 路線上の弧長 s に駅を置く */
+export function stationAt(def: StationDef, index: number, path: Path, s: number): StationLayout {
+  const tan = path.tangentAt(s);
+  // 時計回りの経路では (-ty, tx) が内側
+  return { def, index, s, point: path.pointAt(s), inward: { x: -tan.y, y: tan.x } };
+}
+
+/**
+ * 路線データを画面サイズに合わせて配置する（route 以外の形状）。
+ * frame を渡すと、角丸長方形をその範囲に描く
+ */
+export function layoutLine(line: LineDef, width: number, height: number, frame?: Rect): LineLayout {
+  if (line.shape.type === "route") throw new Error(`${line.id}: route の路線は layoutNetwork で配置します`);
+  const path = buildPath(line.shape, width, height, frame);
   const n = line.stations.length;
-  const mode: StationLayoutDef = line.stationLayout ?? { mode: "even" };
-  if (mode.mode === "vertices" && path.cumulative.length - (path.closed ? 1 : 0) !== n) {
-    throw new Error(`${line.id}: 頂点数と駅数が一致しません`);
-  }
-  const startT = mode.mode === "even" ? (mode.startT ?? 0) : 0;
+  const startT = line.stationLayout?.startT ?? 0;
   const stations = line.stations.map((def, index) => {
-    let s: number;
-    if (def.t !== undefined) {
-      s = path.normalize(def.t * path.length);
-    } else if (mode.mode === "vertices") {
-      s = path.cumulative[index];
-    } else {
-      const t = line.loop ? startT + index / n : startT + (index / Math.max(n - 1, 1)) * (1 - startT);
-      s = path.normalize(t * path.length);
-    }
-    const tan = path.tangentAt(s);
-    // 時計回りの経路では (-ty, tx) が内側
-    return { def, index, s, point: path.pointAt(s), inward: { x: -tan.y, y: tan.x } };
+    const evenT = line.loop ? startT + index / n : startT + (index / Math.max(n - 1, 1)) * (1 - startT);
+    const t = def.t ?? evenT;
+    return stationAt(def, index, path, path.normalize(t * path.length));
   });
   return { line, path, stations };
 }

@@ -48,15 +48,15 @@
 | `boardingSec` | `1.5` | 乗車から発車までの時間（秒） |
 | `delayProbability` | `0.15` | 発車前に遅延が起きる確率（0〜1） |
 | `delayMinSec` / `delayMaxSec` | `4` / `10` | 遅延時間の範囲（秒、上限 60） |
-| `speedPxPerSec` | `200` | 走行速度 |
-| `minSegmentSec` / `maxSegmentSec` | `3` / `10.5` | 1 駅間の所要時間の範囲（秒） |
+| `speedPxPerSec` | `100` | 走行速度 |
+| `minSegmentSec` / `maxSegmentSec` | `6` / `21` | 1 駅間の所要時間の範囲（秒） |
 | `volume` | `0.9` | 音量 |
 | `speechFallback` | `true` | 音声ファイルが無いとき Windows の音声合成で読み上げるか |
 
 乗車回数は同じフォルダの `progress.json` に保存されます。
 同じフォルダの `mouse-on-rails.log` には、Esc の受信やフックの設置状況などの動作ログが残ります（不具合報告の際に添付してください）。
 
-v0.1.3 で走行速度と停車時間の既定値を見直しました。それより前に作られた `settings.json` は、起動時にこれらの値だけ新しい既定値へ置き換えます。
+v0.1.3 で走行速度と停車時間の既定値を見直し、v0.1.5 で走行速度をさらに半分にしました。それより前に作られた `settings.json` は、起動時にこれらの値だけ新しい既定値へ置き換えます。
 
 ## 開発
 
@@ -89,11 +89,13 @@ src-tauri/src/
 - **カーソルの拘束**: 走行中だけ `WH_MOUSE_LL` フックを設置し、物理マウス入力（`LLMHF_INJECTED` でないもの）を破棄します。カーソルは `SetCursorPos` で車両に追従させます。停車・下車・緊急停止・タイムアウトで拘束を解除します。
 - **Esc / 緊急停車**: 路線図の表示中は `Esc` をグローバルホットキーとして登録し、フォーカスに関係なく受け取ります。乗車中はさらに `WH_KEYBOARD_LL` フックでも監視し、フック内で即座にマウスの拘束を解きます（両方から届いた Esc は 1 回として扱います）。その後確認ダイアログを出し、WebView が 2 秒以内に応答しない場合は Rust 側で停車させます。
 - **駅名標**: 画面中央の案内は、路線データの駅ナンバー・よみがな・ローマ字・スリーレターコードから `src/ui/sign.ts` が SVG で生成します。路線の `sign.style` で JR 東日本風（`jr-east`）か東京メトロ風（`tokyo-metro`）を選べます。
-- **路線の解放**: 累計 3 回乗車するごとに `catalog.json` の順に 1 路線を解放します（`ridesPerUnlock`。3 回で中央線快速、6 回で南北線）。解放は事前には知らせず、開業した次に路線図を開いたときにお知らせし、路線図の中央で路線を切り替えられるようになります。
+- **路線の解放**: 累計 3 回乗車するごとに `catalog.json` の順に 1 路線を解放します（`ridesPerUnlock`。3 回で南北線、6 回で丸ノ内線）。解放は乗車中には知らせず、次に路線図を開いたときに派手にお知らせし（知らせてから `progress.json` に記録するので、途中でアプリを終了しても次の起動時に知らせます）、以降は山手線といっしょに路線図に表示されます。乗換駅では乗り入れる全路線の乗車矢印が出ます。
 - **クリック透過**: 路線図表示中も、駅とポップアップの上以外ではクリックが背後のアプリに届きます。
-- **路線の追加**: `src/data/lines/` に JSON を追加し、`catalog.json` の `available` を `true` にします。形状は `roundedRect` か正規化座標の `polyline` で記述できます（`stationLayout.mode: "vertices"` で各頂点に駅を置く）。
+- **路線の追加**: `src/data/lines/` に JSON を追加し、`catalog.json` の `available` を `true` にします。形状は `roundedRect`、正規化座標の `polyline`、または `route` で記述します。
+  `route` は山手線の環を基準に、他の路線の駅（`"yamanote:shinjuku"` など）や環に対する比率で頂点を置き、縦横と 45° の直線でつなぐデフォルメした経路です（`src/domain/network.ts`）。経路に書かない駅は前後の駅の間に等間隔で置きます。
+  環の外に出る路線があれば、画面に収まるよう山手線の環を縮めます（現在の路線はすべて環の中に収まります）。
   路線には車両の塗装（`vehicle`）と駅名標の設定（`sign`）を指定します。
-- **音声**: `src/assets/audio/` に音声ファイルを置くと同梱されます。Gemini TTS で生成するには `GEMINI_API_KEY=... npm run voices`。
+- **音声**: `src/assets/audio/` に音声ファイルを置くと同梱されます。Gemini TTS（`gemini-3.8-flash-tts`）で生成するには `GEMINI_API_KEY=... npm run voices`（作成済みはスキップ。作り直すには `npm run voices:force`）。声は `announcements.json` の `voice` に既製の声の名前か、自作した声の表示名・ID を指定します（`npm run voices -- --list-voices` で一覧）。
 
 ### リリース
 
