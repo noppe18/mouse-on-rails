@@ -1,0 +1,35 @@
+{
+  "ridesPerUnlock": 10,
+  "lines": [
+    {
+      "id": "yamanote",
+      "name": "山手線",
+      "color": "#80C241",
+      "available": true
+    },
+    {
+      "id": "chuo",
+      "name": "中央線快速",
+      "color": "#F15A22",
+      "available": false
+    },
+    {
+      "id": "sobu",
+      "name": "総武線各駅停車",
+      "color": "#FFD400",
+      "available": false
+    },
+    {
+      "id": "keihin-tohoku",
+      "name": "京浜東北線",
+      "color": "#00B2E5",
+      "available": false
+    },
+    {
+      "id": "saikyo",
+      "name": "埼京線",
+      "color": "#00AC9A",
+      "available": false
+    }
+  ]
+}

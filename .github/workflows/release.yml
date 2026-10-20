@@ -1,0 +1,74 @@
+name: Release
+
+# main に push されたとき、src-tauri/tauri.conf.json のバージョン (vX.Y.Z) の Release が
+# まだ無ければ Windows 版をビルドして公開する。手動実行やタグ push でも動く。
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check whether this version is already released
+        id: version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="v$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "$tag は公開済みのためスキップします"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.version.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.version.outputs.skip != 'true'
+        uses: dtolnay/rust-toolchain@stable
+      - if: steps.version.outputs.skip != 'true'
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - if: steps.version.outputs.skip != 'true'
+        run: npm ci
+      - if: steps.version.outputs.skip != 'true'
+        run: npm test
+
+      - if: steps.version.outputs.skip != 'true'
+        name: Build installers and create release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ steps.version.outputs.tag }}
+          releaseName: Mouse on Rails ${{ steps.version.outputs.tag }}
+          releaseBody: |
+            ## ダウンロード
+            - **`*-setup.exe`**: インストーラー（おすすめ）
+            - **`*.msi`**: MSI インストーラー
+            - **`mouse-on-rails-portable.exe`**: インストール不要の単体実行ファイル（WebView2 ランタイムが必要。Windows 10/11 には通常同梱）
+
+            起動後、`Ctrl+Alt+M` で路線図を表示します。終了はタスクトレイのアイコンから。
+          releaseDraft: false
+          prerelease: false
+
+      - if: steps.version.outputs.skip != 'true'
+        name: Upload portable exe
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp src-tauri/target/release/mouse-on-rails.exe mouse-on-rails-portable.exe
+          gh release upload "${{ steps.version.outputs.tag }}" mouse-on-rails-portable.exe --clobber

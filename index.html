@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mouse on Rails</title>
+  </head>
+  <body>
+    <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+    <section id="hud" aria-live="polite">
+      <div class="hud-brand">🚃 Mouse on Rails</div>
+      <div id="hud-line" class="hud-line"></div>
+      <div id="hud-status" class="hud-status"></div>
+      <div id="hud-sub" class="hud-sub"></div>
+      <div id="hud-progress" class="hud-progress"></div>
+      <div id="hud-lines" class="hud-lines"></div>
+      <div id="hud-hint" class="hud-hint"></div>
+    </section>
+    <div id="popup" data-interactive hidden></div>
+    <div id="toasts"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
