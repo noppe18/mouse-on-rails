@@ -1,0 +1,193 @@
+{
+  "id": "namboku",
+  "name": "南北線",
+  "nameEn": "Namboku Line",
+  "color": "#00ADA9",
+  "sign": {
+    "style": "tokyo-metro",
+    "code": "N",
+    "barColor": "#00ADA9"
+  },
+  "loop": false,
+  "shape": {
+    "type": "polyline",
+    "closed": false,
+    "points": [
+      [0.78, 0.92],
+      [0.8, 0.875],
+      [0.82, 0.83],
+      [0.84, 0.785],
+      [0.85, 0.74],
+      [0.855, 0.695],
+      [0.85, 0.65],
+      [0.83, 0.605],
+      [0.83, 0.56],
+      [0.84, 0.515],
+      [0.86, 0.47],
+      [0.88, 0.425],
+      [0.89, 0.38],
+      [0.89, 0.335],
+      [0.88, 0.29],
+      [0.87, 0.245],
+      [0.87, 0.2],
+      [0.86, 0.155],
+      [0.84, 0.11]
+    ]
+  },
+  "stationLayout": {
+    "mode": "vertices"
+  },
+  "directions": {
+    "forward": {
+      "label": "赤羽岩淵方面",
+      "name": "北行き"
+    },
+    "backward": {
+      "label": "目黒方面",
+      "name": "南行き"
+    }
+  },
+  "vehicle": {
+    "model": "9000系",
+    "body": "#cfd6dc",
+    "band": "#00ADA9",
+    "subBand": "#0b6e6b",
+    "face": "#cfd6dc",
+    "faceAccent": "#00ADA9"
+  },
+  "stations": [
+    {
+      "id": "meguro",
+      "name": "目黒",
+      "kana": "めぐろ",
+      "romaji": "Meguro",
+      "number": 1
+    },
+    {
+      "id": "shirokanedai",
+      "name": "白金台",
+      "kana": "しろかねだい",
+      "romaji": "Shirokanedai",
+      "number": 2
+    },
+    {
+      "id": "shirokane-takanawa",
+      "name": "白金高輪",
+      "kana": "しろかねたかなわ",
+      "romaji": "Shirokane-takanawa",
+      "number": 3
+    },
+    {
+      "id": "azabu-juban",
+      "name": "麻布十番",
+      "kana": "あざぶじゅうばん",
+      "romaji": "Azabu-juban",
+      "number": 4
+    },
+    {
+      "id": "roppongi-itchome",
+      "name": "六本木一丁目",
+      "kana": "ろっぽんぎいっちょうめ",
+      "romaji": "Roppongi-itchome",
+      "number": 5
+    },
+    {
+      "id": "tameike-sanno",
+      "name": "溜池山王",
+      "kana": "ためいけさんのう",
+      "romaji": "Tameike-sanno",
+      "number": 6
+    },
+    {
+      "id": "nagatacho",
+      "name": "永田町",
+      "kana": "ながたちょう",
+      "romaji": "Nagatacho",
+      "number": 7
+    },
+    {
+      "id": "yotsuya",
+      "name": "四ツ谷",
+      "kana": "よつや",
+      "romaji": "Yotsuya",
+      "number": 8
+    },
+    {
+      "id": "ichigaya",
+      "name": "市ケ谷",
+      "kana": "いちがや",
+      "romaji": "Ichigaya",
+      "number": 9
+    },
+    {
+      "id": "iidabashi",
+      "name": "飯田橋",
+      "kana": "いいだばし",
+      "romaji": "Iidabashi",
+      "number": 10
+    },
+    {
+      "id": "korakuen",
+      "name": "後楽園",
+      "kana": "こうらくえん",
+      "romaji": "Korakuen",
+      "number": 11
+    },
+    {
+      "id": "todaimae",
+      "name": "東大前",
+      "kana": "とうだいまえ",
+      "romaji": "Todaimae",
+      "number": 12
+    },
+    {
+      "id": "hon-komagome",
+      "name": "本駒込",
+      "kana": "ほんこまごめ",
+      "romaji": "Hon-komagome",
+      "number": 13
+    },
+    {
+      "id": "komagome",
+      "name": "駒込",
+      "kana": "こまごめ",
+      "romaji": "Komagome",
+      "number": 14
+    },
+    {
+      "id": "nishigahara",
+      "name": "西ケ原",
+      "kana": "にしがはら",
+      "romaji": "Nishigahara",
+      "number": 15
+    },
+    {
+      "id": "oji",
+      "name": "王子",
+      "kana": "おうじ",
+      "romaji": "Oji",
+      "number": 16
+    },
+    {
+      "id": "oji-kamiya",
+      "name": "王子神谷",
+      "kana": "おうじかみや",
+      "romaji": "Oji-kamiya",
+      "number": 17
+    },
+    {
+      "id": "shimo",
+      "name": "志茂",
+      "kana": "しも",
+      "romaji": "Shimo",
+      "number": 18
+    },
+    {
+      "id": "akabane-iwabuchi",
+      "name": "赤羽岩淵",
+      "kana": "あかばねいわぶち",
+      "romaji": "Akabane-iwabuchi",
+      "number": 19
+    }
+  ]
+}
