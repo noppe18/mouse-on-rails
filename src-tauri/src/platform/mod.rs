@@ -1,6 +1,7 @@
 // OS 依存処理の境界。
 // 各 OS 向けモジュールは同じ関数群を公開する:
-//   cursor_pos / set_cursor_pos / set_input_blocked / take_blocked_input_count / reveal_in_file_manager
+//   cursor_pos / set_cursor_pos / set_input_blocked / take_blocked_input_count /
+//   set_escape_armed / take_escape_pressed / reveal_in_file_manager
 
 #[cfg(windows)]
 mod win32;

@@ -1,6 +1,6 @@
 [package]
 name = "mouse-on-rails"
-version = "0.1.0"
+version = "0.1.1"
 description = "マウスカーソルを電車に乗せて運ぶジョークアプリ"
 authors = ["noppe18"]
 license = "MIT"
@@ -20,6 +20,7 @@ windows-sys = { version = "0.59", features = [
   "Win32_Foundation",
   "Win32_System_LibraryLoader",
   "Win32_System_Threading",
+  "Win32_UI_Input_KeyboardAndMouse",
   "Win32_UI_WindowsAndMessaging",
 ] }
 

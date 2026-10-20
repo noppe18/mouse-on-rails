@@ -44,6 +44,12 @@ pub fn lock_cursor(state: State<OverlayState>, locked: bool) {
     state.set_locked(locked);
 }
 
+/// 乗車中かどうか（乗車中は Esc で緊急脱出できる）
+#[tauri::command]
+pub fn set_riding(state: State<OverlayState>, riding: bool) {
+    state.set_riding(riding);
+}
+
 /// 乗車1回を記録する
 #[tauri::command]
 pub fn record_ride(store: State<Store>) -> Result<Progress, String> {

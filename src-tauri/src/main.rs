@@ -33,6 +33,7 @@ fn main() {
             commands::set_ignore_cursor,
             commands::set_cursor,
             commands::lock_cursor,
+            commands::set_riding,
             commands::record_ride,
             commands::unlock_lines,
         ])
@@ -64,6 +65,7 @@ fn main() {
         if let RunEvent::Exit = event {
             // 終了時は必ずマウス拘束を解除する
             platform::set_input_blocked(false);
+            platform::set_escape_armed(false);
         }
     });
 }
