@@ -67,7 +67,50 @@ export function diagonalBend(p: Point, q: Point, via: "diag-first" | "diag-last"
   return via === "diag-last" ? { x: p.x, y: q.y - Math.sign(dy) * d } : { x: q.x, y: p.y + Math.sign(dy) * d };
 }
 
-function layoutRoute(line: LineDef, shape: RouteShape, frame: Rect, spacing: number, placed: Map<string, Point>): LineLayout {
+/** 円弧を近似する点の数（90° あたり） */
+const ARC_STEPS_PER_RIGHT_ANGLE = 12;
+
+/**
+ * 折れ線の角を円弧で丸める（山手線の角丸と見た目をそろえる）。
+ * 隣の角の円弧と重ならないよう、各辺の 45% までに収める。
+ * keep に含めた頂点（駅を置く角。駅の点が角を隠す）は丸めず、位置をそのまま残す。
+ * 戻り値の map[i] は元の頂点 i に対応する新しい点の添字
+ */
+export function roundCorners(points: readonly Point[], radius: number, keep: ReadonlySet<number> = new Set()): { points: Point[]; map: number[] } {
+  const out: Point[] = [points[0]];
+  const map = [0];
+  for (let i = 1; i < points.length - 1; i++) {
+    const a = points[i - 1], p = points[i], b = points[i + 1];
+    const l1 = Math.hypot(p.x - a.x, p.y - a.y), l2 = Math.hypot(b.x - p.x, b.y - p.y);
+    const u1 = { x: (p.x - a.x) / l1, y: (p.y - a.y) / l1 };
+    const u2 = { x: (b.x - p.x) / l2, y: (b.y - p.y) / l2 };
+    const turn = Math.acos(Math.max(-1, Math.min(1, u1.x * u2.x + u1.y * u2.y)));
+    if (keep.has(i) || !(l1 > 0 && l2 > 0) || turn < 1e-3) {
+      map.push(out.length);
+      out.push(p);
+      continue;
+    }
+    // 角から円弧の端までの距離
+    const t = Math.min(radius * Math.tan(turn / 2), l1 * 0.45, l2 * 0.45);
+    const r = t / Math.tan(turn / 2);
+    const t1 = { x: p.x - u1.x * t, y: p.y - u1.y * t };
+    // 曲がる側への法線
+    const side = u1.x * u2.y - u1.y * u2.x > 0 ? 1 : -1;
+    const c = { x: t1.x - u1.y * r * side, y: t1.y + u1.x * r * side };
+    const a1 = Math.atan2(t1.y - c.y, t1.x - c.x);
+    const steps = Math.max(2, Math.ceil((turn / (Math.PI / 2)) * ARC_STEPS_PER_RIGHT_ANGLE / 2) * 2);
+    for (let k = 0; k <= steps; k++) {
+      if (k === steps / 2) map.push(out.length);
+      const ang = a1 + side * turn * (k / steps);
+      out.push({ x: c.x + r * Math.cos(ang), y: c.y + r * Math.sin(ang) });
+    }
+  }
+  map.push(out.length);
+  out.push(points[points.length - 1]);
+  return { points: out, map };
+}
+
+function layoutRoute(line: LineDef, shape: RouteShape, frame: Rect, spacing: number, radius: number, placed: Map<string, Point>): LineLayout {
   const local = new Map<string, Point>();
   const ref = (key: string): Point => {
     const p = key.includes(":") ? placed.get(key) : local.get(key);
@@ -97,7 +140,10 @@ function layoutRoute(line: LineDef, shape: RouteShape, frame: Rect, spacing: num
     if (!p || !q) throw new Error(`${line.id}: 曲がり角の前後には座標のある頂点が必要です`);
     points[i] = diagonalBend(p, q, node.via);
   });
-  const path = new Path(points as Point[], false);
+  // 駅を置いた角は丸めない（乗換駅の位置を他の路線とそろえたままにする）
+  const stationVertices = new Set(shape.nodes.flatMap((node, i) => (node.station ? [i] : [])));
+  const rounded = roundCorners(points as Point[], radius, stationVertices);
+  const path = new Path(rounded.points, false);
 
   // 経路に書いた駅は頂点に、書いていない駅は前後の駅の間に等間隔で置く
   const anchors = new Map<number, number>();
@@ -105,7 +151,7 @@ function layoutRoute(line: LineDef, shape: RouteShape, frame: Rect, spacing: num
     if (!node.station) return;
     const index = line.stations.findIndex((s) => s.id === node.station);
     if (index < 0) throw new Error(`${line.id}: 駅 ${node.station} がありません`);
-    anchors.set(index, path.cumulative[i]);
+    anchors.set(index, path.cumulative[rounded.map[i]]);
   });
   const n = line.stations.length;
   if (!anchors.has(0) || !anchors.has(n - 1)) throw new Error(`${line.id}: 始点と終点の駅は経路に書いてください`);
@@ -126,10 +172,13 @@ function layoutRoute(line: LineDef, shape: RouteShape, frame: Rect, spacing: num
 /** 枠 frame で全路線を配置する（route は前に配置した路線の駅を参照できる） */
 function layoutAll(lines: readonly LineDef[], width: number, height: number, frame: Rect, spacing: number): Map<string, LineLayout> {
   const placed = new Map<string, Point>();
+  // 角の丸めは山手線の角丸と同じ半径にする
+  const ring = lines.find((l) => l.shape.type === "roundedRect");
+  const radius = ring?.shape.type === "roundedRect" ? Math.min(width, height) * ring.shape.cornerRadius : spacing;
   const result = new Map<string, LineLayout>();
   for (const line of lines) {
     const layout =
-      line.shape.type === "route" ? layoutRoute(line, line.shape, frame, spacing, placed) : layoutLine(line, width, height, frame);
+      line.shape.type === "route" ? layoutRoute(line, line.shape, frame, spacing, radius, placed) : layoutLine(line, width, height, frame);
     for (const st of layout.stations) placed.set(`${line.id}:${st.def.id}`, st.point);
     result.set(line.id, layout);
   }

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { layoutLine, segmentDistance, nextStationIndex } from "../src/domain/layout.ts";
-import { layoutNetwork } from "../src/domain/network.ts";
+import { layoutNetwork, roundCorners } from "../src/domain/network.ts";
 import { RideSession, type OperationConfig } from "../src/domain/ride.ts";
 import { newlyUnlocked, ridesUntilNextUnlock, unlockedCount } from "../src/domain/unlock.ts";
 import type { Catalog, LineDef } from "../src/domain/types.ts";
@@ -156,6 +156,8 @@ test("路線網: 南北線・丸ノ内線は縦横と 45° の直線で描き、
       for (let i = 1; i < pts.length; i++) {
         const dx = Math.abs(pts[i].x - pts[i - 1].x);
         const dy = Math.abs(pts[i].y - pts[i - 1].y);
+        // 角を丸めた円弧の細かい区間は除き、直線の区間だけ確かめる
+        if (Math.hypot(dx, dy) < 30) continue;
         assert.ok(dx < 0.01 || dy < 0.01 || Math.abs(dx - dy) < 0.01, `${layout.line.id} ${w}x${h} 区間 ${i}`);
       }
     }
@@ -191,6 +193,21 @@ test("南北線は目黒から駒込、丸ノ内線は池袋から新宿、銀�
   const ginza = loadLine("ginza");
   assert.equal(ginza.stations.length, 16);
   assert.deepEqual([ginza.sign?.code, ginza.stations[0].name, ginza.stations[15].number], ["G", "渋谷", 16]);
+});
+
+test("角を円弧で丸める。駅を置いた角はそのまま", () => {
+  const { points, map } = roundCorners([{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }], 30);
+  assert.deepEqual(points[0], { x: 0, y: 0 });
+  assert.deepEqual(points[points.length - 1], { x: 100, y: 100 });
+  // 90° の角は半径 30 の円弧になり、中点は角から r(√2 - 1) だけ内側
+  const mid = points[map[1]];
+  assert.ok(Math.abs(Math.hypot(100 - mid.x, mid.y) - 30 * (Math.SQRT2 - 1)) < 0.5);
+  // 直線の頂点（曲がらない）はそのまま
+  const straight = roundCorners([{ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 100, y: 0 }], 30);
+  assert.deepEqual(straight.points, [{ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 100, y: 0 }]);
+  // 駅を置いた角は丸めない
+  const kept = roundCorners([{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }], 30, new Set([1]));
+  assert.deepEqual(kept.points[kept.map[1]], { x: 100, y: 0 });
 });
 
 test("開路線は終点で折り返す", () => {
