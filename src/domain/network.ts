@@ -145,9 +145,10 @@ function buildGroups(layouts: LineLayout[], width: number, height: number): Stat
   const byId = new Map<string, StationGroup["members"]>();
   layouts.forEach((layout, line) =>
     layout.stations.forEach((st, station) => {
-      const members = byId.get(st.def.id) ?? [];
+      const key = st.def.group ?? st.def.id;
+      const members = byId.get(key) ?? [];
       members.push({ line, station });
-      byId.set(st.def.id, members);
+      byId.set(key, members);
     }),
   );
   const groups = [...byId].map(([id, members]) => ({ id, members, labelDir: { x: 0, y: 0 } }));

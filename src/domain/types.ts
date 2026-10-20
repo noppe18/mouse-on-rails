@@ -60,6 +60,11 @@ export interface StationDef {
   romaji?: string;
   number?: number;
   code?: string;
+  /**
+   * 乗換駅としてまとめる ID（省略時は id）。路線図の都合で同じ駅を離して描くとき、
+   * 別の値にすると連絡線でつながず別々の駅として描く
+   */
+  group?: string;
   /** 路線上の位置 (0..1)。省略時は stationLayout に従って配置 */
   t?: number;
 }

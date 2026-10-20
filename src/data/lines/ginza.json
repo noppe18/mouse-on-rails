@@ -1,0 +1,158 @@
+{
+  "id": "ginza",
+  "name": "銀座線",
+  "nameEn": "Ginza Line",
+  "color": "#FF9500",
+  "sign": {
+    "style": "tokyo-metro",
+    "code": "G",
+    "barColor": "#FF9500"
+  },
+  "loop": false,
+  "shape": {
+    "type": "route",
+    "nodes": [
+      { "station": "shibuya", "at": "yamanote" },
+      { "via": "diag-first" },
+      { "station": "akasaka-mitsuke", "x": "marunouchi:akasaka-mitsuke", "y": "marunouchi:akasaka-mitsuke", "dy": 1.2 },
+      { "via": "diag-first" },
+      { "station": "shimbashi", "x": "yamanote:tokyo", "dx": -1.8, "y": "yamanote:shimbashi" },
+      { "station": "ginza", "at": "marunouchi" },
+      { "station": "kanda", "x": "yamanote:tokyo", "dx": -1.8, "y": "yamanote:kanda" },
+      { "via": "diag-last" },
+      { "station": "ueno", "at": "yamanote" }
+    ]
+  },
+  "directions": {
+    "forward": {
+      "label": "北行き",
+      "name": "上野行き"
+    },
+    "backward": {
+      "label": "南行き",
+      "name": "渋谷行き"
+    }
+  },
+  "vehicle": {
+    "model": "1000系",
+    "body": "#FFB400",
+    "band": "#E08A00",
+    "face": "#FFB400",
+    "faceAccent": "#1f2428"
+  },
+  "stations": [
+    {
+      "id": "shibuya",
+      "name": "渋谷",
+      "kana": "しぶや",
+      "romaji": "Shibuya",
+      "number": 1
+    },
+    {
+      "id": "omote-sando",
+      "name": "表参道",
+      "kana": "おもてさんどう",
+      "romaji": "Omote-sando",
+      "number": 2
+    },
+    {
+      "id": "gaiemmae",
+      "name": "外苑前",
+      "kana": "がいえんまえ",
+      "romaji": "Gaiemmae",
+      "number": 3
+    },
+    {
+      "id": "aoyama-itchome",
+      "name": "青山一丁目",
+      "kana": "あおやまいっちょうめ",
+      "romaji": "Aoyama-itchome",
+      "number": 4
+    },
+    {
+      "id": "akasaka-mitsuke",
+      "name": "赤坂見附",
+      "kana": "あかさかみつけ",
+      "romaji": "Akasaka-mitsuke",
+      "number": 5
+    },
+    {
+      "id": "tameike-sanno",
+      "name": "溜池山王",
+      "kana": "ためいけさんのう",
+      "romaji": "Tameike-sanno",
+      "number": 6,
+      "group": "tameike-sanno-ginza"
+    },
+    {
+      "id": "toranomon",
+      "name": "虎ノ門",
+      "kana": "とらのもん",
+      "romaji": "Toranomon",
+      "number": 7
+    },
+    {
+      "id": "shimbashi",
+      "name": "新橋",
+      "kana": "しんばし",
+      "romaji": "Shimbashi",
+      "number": 8
+    },
+    {
+      "id": "ginza",
+      "name": "銀座",
+      "kana": "ぎんざ",
+      "romaji": "Ginza",
+      "number": 9
+    },
+    {
+      "id": "kyobashi",
+      "name": "京橋",
+      "kana": "きょうばし",
+      "romaji": "Kyobashi",
+      "number": 10
+    },
+    {
+      "id": "nihombashi",
+      "name": "日本橋",
+      "kana": "にほんばし",
+      "romaji": "Nihombashi",
+      "number": 11
+    },
+    {
+      "id": "mitsukoshimae",
+      "name": "三越前",
+      "kana": "みつこしまえ",
+      "romaji": "Mitsukoshimae",
+      "number": 12
+    },
+    {
+      "id": "kanda",
+      "name": "神田",
+      "kana": "かんだ",
+      "romaji": "Kanda",
+      "number": 13
+    },
+    {
+      "id": "suehirocho",
+      "name": "末広町",
+      "kana": "すえひろちょう",
+      "romaji": "Suehirocho",
+      "number": 14
+    },
+    {
+      "id": "ueno-hirokoji",
+      "name": "上野広小路",
+      "kana": "うえのひろこうじ",
+      "romaji": "Ueno-hirokoji",
+      "number": 15
+    },
+    {
+      "id": "ueno",
+      "name": "上野",
+      "kana": "うえの",
+      "romaji": "Ueno",
+      "number": 16
+    }
+  ]
+}

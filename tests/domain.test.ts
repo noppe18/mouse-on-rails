@@ -104,6 +104,10 @@ test("3回乗車ごとに路線が解放される", () => {
   assert.deepEqual(newlyUnlocked(catalog, 6, ["yamanote", "namboku"]).map((l) => l.id), ["marunouchi"]);
   // 起動していない間に 2 路線ぶん乗っていれば、まとめて開業する
   assert.deepEqual(newlyUnlocked(catalog, 7, ["yamanote"]).map((l) => l.id), ["namboku", "marunouchi"]);
+  assert.deepEqual(newlyUnlocked(catalog, 9, ["yamanote", "namboku", "marunouchi"]).map((l) => l.id), ["ginza"]);
+  // 全路線が開業したら、それ以上は何も開業しない
+  assert.equal(ridesUntilNextUnlock(catalog, 9), null);
+  assert.deepEqual(newlyUnlocked(catalog, 100, ["yamanote", "namboku", "marunouchi", "ginza"]), []);
 });
 
 test("実装済みの路線はすべて路線データがあり、駅番号と読みがそろっている", () => {
@@ -166,6 +170,9 @@ test("路線網: 南北線・丸ノ内線は縦横と 45° の直線で描き、
     same(point("marunouchi", "shinjuku"), point("yamanote", "shinjuku"));
     same(point("marunouchi", "korakuen"), point("namboku", "korakuen"));
     same(point("marunouchi", "yotsuya"), point("namboku", "yotsuya"));
+    same(point("ginza", "shibuya"), point("yamanote", "shibuya"));
+    same(point("ginza", "ueno"), point("yamanote", "ueno"));
+    same(point("ginza", "ginza"), point("marunouchi", "ginza"));
     // 東京は山手線の線路と重ならないよう、少し内側に置いて連絡線でつなぐ
     const d = Math.hypot(point("marunouchi", "tokyo").x - point("yamanote", "tokyo").x, point("marunouchi", "tokyo").y - point("yamanote", "tokyo").y);
     assert.ok(d > 10 && d < 40);
@@ -174,13 +181,16 @@ test("路線網: 南北線・丸ノ内線は縦横と 45° の直線で描き、
   }
 });
 
-test("南北線は目黒から駒込、丸ノ内線は池袋から新宿", () => {
+test("南北線は目黒から駒込、丸ノ内線は池袋から新宿、銀座線は渋谷から上野", () => {
   const namboku = loadLine("namboku");
   assert.equal(namboku.stations.length, 14);
   assert.deepEqual([namboku.sign?.code, namboku.stations[0].name, namboku.stations[13].name], ["N", "目黒", "駒込"]);
   const marunouchi = loadLine("marunouchi");
   assert.equal(marunouchi.stations.length, 18);
   assert.deepEqual([marunouchi.sign?.code, marunouchi.stations[0].number, marunouchi.stations[17].name], ["M", 25, "新宿"]);
+  const ginza = loadLine("ginza");
+  assert.equal(ginza.stations.length, 16);
+  assert.deepEqual([ginza.sign?.code, ginza.stations[0].name, ginza.stations[15].number], ["G", "渋谷", 16]);
 });
 
 test("開路線は終点で折り返す", () => {

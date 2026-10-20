@@ -18,6 +18,7 @@
       { "via": "diag-last" },
       { "station": "tokyo", "x": "yamanote:tokyo", "dx": -0.6, "y": "yamanote:tokyo" },
       { "via": "diag-first" },
+      { "station": "ginza", "x": "yamanote:tokyo", "dx": -1.8, "y": "namboku:yotsuya" },
       { "station": "yotsuya", "at": "namboku" },
       { "via": "diag-last" },
       { "station": "shinjuku", "at": "yamanote" }
