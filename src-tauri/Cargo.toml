@@ -1,6 +1,6 @@
 [package]
 name = "mouse-on-rails"
-version = "0.1.2"
+version = "0.1.3"
 description = "マウスカーソルを電車に乗せて運ぶジョークアプリ"
 authors = ["noppe18"]
 license = "MIT"

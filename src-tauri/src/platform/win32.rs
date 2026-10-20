@@ -90,6 +90,11 @@ fn spawn_hook_thread() -> Option<u32> {
         let module = GetModuleHandleW(null_mut());
         let mouse = SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook), module, 0);
         let keyboard = SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_hook), module, 0);
+        crate::applog::write(&format!(
+            "フック設置: マウス={} キーボード={}",
+            if mouse.is_null() { "失敗" } else { "成功" },
+            if keyboard.is_null() { "失敗" } else { "成功" },
+        ));
         if mouse.is_null() && keyboard.is_null() {
             let _ = tx.send(None);
             return;
@@ -128,11 +133,10 @@ unsafe extern "system" fn keyboard_hook(code: i32, wparam: WPARAM, lparam: LPARA
     {
         let info = &*(lparam as *const KBDLLHOOKSTRUCT);
         if info.vkCode == VK_ESCAPE as u32 && info.flags & LLKHF_INJECTED == 0 {
-            // アプリ本体が応答しなくても即座にマウスを解放する
+            // アプリ本体が応答しなくても即座にマウスを解放する。
+            // Esc はグローバルホットキーとしても登録しているので、ここでは握りつぶさずに流す
             BLOCKING.store(false, Ordering::SeqCst);
             ESCAPE_PRESSED.store(true, Ordering::SeqCst);
-            // 背後のアプリに Esc が届かないよう握りつぶす
-            return 1;
         }
     }
     CallNextHookEx(null_mut(), code, wparam, lparam)

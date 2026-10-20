@@ -175,28 +175,24 @@ body {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  min-width: 360px;
-  max-width: min(640px, 60vw);
-  padding: 18px 24px;
-  border-radius: 16px;
-  background: var(--panel);
-  color: var(--panel-ink);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  width: min(640px, 50vw);
   pointer-events: none;
   text-align: center;
   display: grid;
-  gap: 6px;
+  justify-items: center;
+  gap: 8px;
+  color: var(--panel-ink);
 }
 
-.hud-brand {
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--muted);
+.hud-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
 }
 
 .hud-line {
-  justify-self: center;
-  padding: 2px 14px;
+  padding: 3px 14px;
   border-radius: 999px;
   background: var(--line-color);
   color: #fff;
@@ -204,22 +200,39 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.hud-status {
-  font-size: 24px;
+.hud-caption:not(:empty) {
+  padding: 3px 12px;
+  border-radius: 6px;
+  background: var(--panel);
+  font-size: 18px;
   font-weight: 700;
+}
+
+.hud-sign {
+  width: 100%;
+}
+
+.station-sign {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
 }
 
 .hud-sub,
 .hud-hint {
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: var(--panel);
   font-size: 13px;
   color: var(--muted);
 }
 
+.hud-sub:empty {
+  display: none;
+}
+
 .hud-hint.emergency {
-  justify-self: center;
-  margin-top: 4px;
-  padding: 4px 12px;
-  border-radius: 6px;
   background: #c62828;
   color: #fff;
   font-weight: 700;
