@@ -24,3 +24,5 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+      # インストーラーまで作れることを確認する（Release と同じ手順）
+      - run: npx tauri build

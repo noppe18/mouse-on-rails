@@ -85,8 +85,5 @@ src-tauri/src/
 
 ### リリース
 
-`v` で始まるタグを push すると GitHub Actions が Windows 版をビルドし、Release に公開します。
-
-```sh
-git tag v0.1.0 && git push origin v0.1.0
-```
+`src-tauri/tauri.conf.json` の `version` を上げて main に push すると、GitHub Actions が Windows 版をビルドし
+`vX.Y.Z` の Release として公開します（そのバージョンの Release が既にあればスキップ）。`v*` タグの push や手動実行でも動きます。

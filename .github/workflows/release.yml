@@ -1,9 +1,12 @@
 name: Release
 
-# v で始まるタグ（例: v0.1.0）を push すると Windows 版をビルドして GitHub Release に公開する
+# main に push されたとき、src-tauri/tauri.conf.json のバージョン (vX.Y.Z) の Release が
+# まだ無ければ Windows 版をビルドして公開する。手動実行やタグ push でも動く。
 on:
   push:
+    branches: [main]
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,24 +16,44 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Check whether this version is already released
+        id: version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="v$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "$tag は公開済みのためスキップします"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.version.outputs.skip != 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: swatinem/rust-cache@v2
+      - if: steps.version.outputs.skip != 'true'
+        uses: dtolnay/rust-toolchain@stable
+      - if: steps.version.outputs.skip != 'true'
+        uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      - run: npm ci
-      - run: npm test
+      - if: steps.version.outputs.skip != 'true'
+        run: npm ci
+      - if: steps.version.outputs.skip != 'true'
+        run: npm test
 
-      - name: Build installers and create release
+      - if: steps.version.outputs.skip != 'true'
+        name: Build installers and create release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Mouse on Rails ${{ github.ref_name }}
+          tagName: ${{ steps.version.outputs.tag }}
+          releaseName: Mouse on Rails ${{ steps.version.outputs.tag }}
           releaseBody: |
             ## ダウンロード
             - **`*-setup.exe`**: インストーラー（おすすめ）
@@ -41,10 +64,11 @@ jobs:
           releaseDraft: false
           prerelease: false
 
-      - name: Upload portable exe
+      - if: steps.version.outputs.skip != 'true'
+        name: Upload portable exe
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp src-tauri/target/release/mouse-on-rails.exe mouse-on-rails-portable.exe
-          gh release upload "${GITHUB_REF_NAME}" mouse-on-rails-portable.exe --clobber
+          gh release upload "${{ steps.version.outputs.tag }}" mouse-on-rails-portable.exe --clobber
