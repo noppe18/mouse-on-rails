@@ -1,0 +1,148 @@
+{
+  "id": "yamanote",
+  "name": "山手線",
+  "color": "#80C241",
+  "loop": true,
+  "shape": {
+    "type": "roundedRect",
+    "margin": 0.085,
+    "minMarginPx": 64,
+    "cornerRadius": 0.2
+  },
+  "stationLayout": {
+    "mode": "even",
+    "startT": 0.012
+  },
+  "directions": {
+    "forward": {
+      "label": "時計回り",
+      "name": "外回り"
+    },
+    "backward": {
+      "label": "反時計回り",
+      "name": "内回り"
+    }
+  },
+  "stations": [
+    {
+      "id": "ikebukuro",
+      "name": "池袋"
+    },
+    {
+      "id": "otsuka",
+      "name": "大塚"
+    },
+    {
+      "id": "sugamo",
+      "name": "巣鴨"
+    },
+    {
+      "id": "komagome",
+      "name": "駒込"
+    },
+    {
+      "id": "tabata",
+      "name": "田端"
+    },
+    {
+      "id": "nishi-nippori",
+      "name": "西日暮里"
+    },
+    {
+      "id": "nippori",
+      "name": "日暮里"
+    },
+    {
+      "id": "uguisudani",
+      "name": "鶯谷"
+    },
+    {
+      "id": "ueno",
+      "name": "上野"
+    },
+    {
+      "id": "okachimachi",
+      "name": "御徒町"
+    },
+    {
+      "id": "akihabara",
+      "name": "秋葉原"
+    },
+    {
+      "id": "kanda",
+      "name": "神田"
+    },
+    {
+      "id": "tokyo",
+      "name": "東京"
+    },
+    {
+      "id": "yurakucho",
+      "name": "有楽町"
+    },
+    {
+      "id": "shimbashi",
+      "name": "新橋"
+    },
+    {
+      "id": "hamamatsucho",
+      "name": "浜松町"
+    },
+    {
+      "id": "tamachi",
+      "name": "田町"
+    },
+    {
+      "id": "takanawa-gateway",
+      "name": "高輪ゲートウェイ"
+    },
+    {
+      "id": "shinagawa",
+      "name": "品川"
+    },
+    {
+      "id": "osaki",
+      "name": "大崎"
+    },
+    {
+      "id": "gotanda",
+      "name": "五反田"
+    },
+    {
+      "id": "meguro",
+      "name": "目黒"
+    },
+    {
+      "id": "ebisu",
+      "name": "恵比寿"
+    },
+    {
+      "id": "shibuya",
+      "name": "渋谷"
+    },
+    {
+      "id": "harajuku",
+      "name": "原宿"
+    },
+    {
+      "id": "yoyogi",
+      "name": "代々木"
+    },
+    {
+      "id": "shinjuku",
+      "name": "新宿"
+    },
+    {
+      "id": "shin-okubo",
+      "name": "新大久保"
+    },
+    {
+      "id": "takadanobaba",
+      "name": "高田馬場"
+    },
+    {
+      "id": "mejiro",
+      "name": "目白"
+    }
+  ]
+}

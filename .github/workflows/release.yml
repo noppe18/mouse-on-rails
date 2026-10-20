@@ -1,0 +1,50 @@
+name: Release
+
+# v で始まるタグ（例: v0.1.0）を push すると Windows 版をビルドして GitHub Release に公開する
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm test
+
+      - name: Build installers and create release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Mouse on Rails ${{ github.ref_name }}
+          releaseBody: |
+            ## ダウンロード
+            - **`*-setup.exe`**: インストーラー（おすすめ）
+            - **`*.msi`**: MSI インストーラー
+            - **`mouse-on-rails-portable.exe`**: インストール不要の単体実行ファイル（WebView2 ランタイムが必要。Windows 10/11 には通常同梱）
+
+            起動後、`Ctrl+Alt+M` で路線図を表示します。終了はタスクトレイのアイコンから。
+          releaseDraft: false
+          prerelease: false
+
+      - name: Upload portable exe
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp src-tauri/target/release/mouse-on-rails.exe mouse-on-rails-portable.exe
+          gh release upload "${GITHUB_REF_NAME}" mouse-on-rails-portable.exe --clobber
