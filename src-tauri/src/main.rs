@@ -34,6 +34,7 @@ fn main() {
             commands::set_cursor,
             commands::lock_cursor,
             commands::set_riding,
+            commands::ack_emergency,
             commands::record_ride,
             commands::unlock_lines,
         ])

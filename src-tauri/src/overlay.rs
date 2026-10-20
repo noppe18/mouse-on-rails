@@ -13,6 +13,9 @@ const WINDOW_LABEL: &str = "overlay";
 const POLL_INTERVAL: Duration = Duration::from_millis(16);
 /// フロントエンドからのハートビートがこの時間途絶えたら拘束を自動解除する
 const HEARTBEAT_TIMEOUT: Duration = Duration::from_millis(1500);
+/// Esc 後、フロントエンドが確認ダイアログを出せないまま
+/// この時間が過ぎたら、確認なしで緊急停車する
+const EMERGENCY_ACK_TIMEOUT: Duration = Duration::from_millis(2000);
 
 /// オーバーレイが覆っているモニターの物理座標と拡大率
 #[derive(Clone, Copy)]
@@ -26,6 +29,7 @@ pub struct OverlayState {
     visible: AtomicBool,
     locked: AtomicBool,
     riding: AtomicBool,
+    emergency_requested: Mutex<Option<Instant>>,
     geometry: Mutex<Geometry>,
     heartbeat: Mutex<Instant>,
 }
@@ -36,6 +40,7 @@ impl Default for OverlayState {
             visible: AtomicBool::new(false),
             locked: AtomicBool::new(false),
             riding: AtomicBool::new(false),
+            emergency_requested: Mutex::new(None),
             geometry: Mutex::new(Geometry { origin_x: 0, origin_y: 0, scale: 1.0 }),
             heartbeat: Mutex::new(Instant::now()),
         }
@@ -62,11 +67,16 @@ impl OverlayState {
         platform::set_input_blocked(locked);
     }
 
-    /// 乗車中は Esc キーによる緊急脱出を受け付ける
+    /// 乗車中は Esc キーによる緊急停車を受け付ける
     pub fn set_riding(&self, riding: bool) {
         let riding = riding && self.is_visible();
         self.riding.store(riding, Ordering::SeqCst);
         platform::set_escape_armed(riding);
+    }
+
+    /// フロントエンドが緊急停車の確認ダイアログを表示した
+    pub fn ack_emergency(&self) {
+        *self.emergency_requested.lock().unwrap() = None;
     }
 
     pub fn is_locked(&self) -> bool {
@@ -134,6 +144,7 @@ pub fn hide(app: &AppHandle) {
     state.visible.store(false, Ordering::SeqCst);
     state.set_locked(false);
     state.set_riding(false);
+    state.ack_emergency();
     if let Some(win) = window(app) {
         let _ = win.hide();
     }
@@ -148,7 +159,7 @@ pub fn toggle(app: &AppHandle) {
     }
 }
 
-/// カーソル位置の通知、抑止したマウス入力の通知、緊急脱出、拘束のウォッチドッグを行う
+/// カーソル位置の通知、抑止したマウス入力の通知、緊急停車、拘束のウォッチドッグを行う
 pub fn spawn_poller(app: AppHandle) {
     thread::spawn(move || {
         let mut last: Option<CursorPayload> = None;
@@ -163,8 +174,23 @@ pub fn spawn_poller(app: AppHandle) {
             }
 
             if platform::take_escape_pressed() {
-                // Esc による緊急脱出（マウスはフック側で解放済み）
-                let _ = app.emit("emergency-escape", ());
+                // Esc による緊急停車の要求。マウスはフック側で解放済みで、
+                // 停車するかどうかはフロントエンドの確認ダイアログで決める
+                state.set_locked(false);
+                *state.emergency_requested.lock().unwrap() = Some(Instant::now());
+                if let Some(win) = window(&app) {
+                    let _ = win.set_focus();
+                }
+                let _ = app.emit("emergency-request", ());
+            }
+
+            let unanswered = state
+                .emergency_requested
+                .lock()
+                .unwrap()
+                .is_some_and(|t| t.elapsed() > EMERGENCY_ACK_TIMEOUT);
+            if unanswered {
+                // 画面が応答しない場合は確認なしで停車する
                 hide(&app);
                 continue;
             }

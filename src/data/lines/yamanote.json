@@ -7,7 +7,7 @@
     "type": "roundedRect",
     "margin": 0.085,
     "minMarginPx": 64,
-    "cornerRadius": 0.2
+    "cornerRadius": 0.06
   },
   "stationLayout": {
     "mode": "even",

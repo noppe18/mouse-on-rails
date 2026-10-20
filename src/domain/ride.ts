@@ -44,6 +44,8 @@ export class RideSession {
   phaseStart: number;
   phaseEnd: number;
   delayReason: DelayReason | null = null;
+  /** 一度でも発車したか（乗車駅では下車できない） */
+  departed = false;
   readonly layout: LineLayout;
   readonly config: OperationConfig;
   private readonly random: () => number;
@@ -99,6 +101,17 @@ export class RideSession {
     return this.phase !== "running";
   }
 
+  /** 下車できるか（乗車駅以外の駅に停車中） */
+  get canAlight(): boolean {
+    return this.atStation && this.departed;
+  }
+
+  /** 一時停止していた時間だけ時刻をずらす */
+  shift(dt: number): void {
+    this.phaseStart += dt;
+    this.phaseEnd += dt;
+  }
+
   /** 次に停車する駅 */
   get nextStation(): number | null {
     if (this.phase === "running") return this.targetIndex;
@@ -143,6 +156,7 @@ export class RideSession {
     const { speedPxPerSec, minSegmentSec, maxSegmentSec } = this.config;
     const duration = Math.min(maxSegmentSec, Math.max(minSegmentSec, this.segmentLength / speedPxPerSec));
     this.targetIndex = next;
+    this.departed = true;
     this.enter("running", t, duration);
     return [{ type: "depart", from: this.stationIndex, to: next }];
   }

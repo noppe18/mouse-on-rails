@@ -81,14 +81,36 @@ test("遅延は発車前に発生し、上限時間内に終わる", () => {
   assert.equal(ev2[0].type, "depart");
 });
 
-test("10回乗車ごとに路線が解放される", () => {
+test("3回乗車ごとに路線が解放される", () => {
   assert.equal(unlockedCount(catalog, 0), 1);
-  assert.equal(unlockedCount(catalog, 9), 1);
-  assert.equal(unlockedCount(catalog, 10), 2);
-  assert.equal(unlockedCount(catalog, 25), 3);
+  assert.equal(unlockedCount(catalog, 2), 1);
+  assert.equal(unlockedCount(catalog, 3), 2);
+  assert.equal(unlockedCount(catalog, 7), 3);
   assert.equal(unlockedCount(catalog, 10_000), catalog.lines.length);
-  assert.equal(ridesUntilNextUnlock(catalog, 3), 7);
+  assert.equal(ridesUntilNextUnlock(catalog, 1), 2);
   assert.equal(ridesUntilNextUnlock(catalog, 10_000), null);
-  assert.deepEqual(newlyUnlocked(catalog, 10, ["yamanote"]).map((l) => l.id), ["chuo"]);
-  assert.deepEqual(newlyUnlocked(catalog, 10, ["yamanote", "chuo"]), []);
+  assert.deepEqual(newlyUnlocked(catalog, 3, ["yamanote"]).map((l) => l.id), ["chuo"]);
+  assert.deepEqual(newlyUnlocked(catalog, 3, ["yamanote", "chuo"]), []);
+});
+
+test("乗車駅では下車できず、次の駅からは下車できる", () => {
+  const layout = layoutLine(yamanote, 1920, 1080);
+  const ride = new RideSession(layout, 5, 1, { ...config, delayProbability: 1 }, 0, () => 0);
+  assert.equal(ride.canAlight, false);
+  ride.update(1); // 乗車駅で遅延
+  assert.equal(ride.phase, "delayed");
+  assert.equal(ride.canAlight, false);
+  ride.update(ride.phaseEnd); // 発車
+  assert.equal(ride.canAlight, false);
+  ride.update(ride.phaseEnd); // 到着
+  assert.equal(ride.stationIndex, 6);
+  assert.equal(ride.canAlight, true);
+});
+
+test("一時停止した分だけ発車が遅れる", () => {
+  const layout = layoutLine(yamanote, 1920, 1080);
+  const ride = new RideSession(layout, 0, 1, config, 0);
+  ride.shift(10);
+  assert.deepEqual(ride.update(1), []);
+  assert.equal(ride.update(11)[0].type, "depart");
 });
