@@ -33,9 +33,13 @@ export const sfx = {
   buzzer() {
     tone(220, 0, 0.25, 0.08 * this.volume, "square");
   },
-  /** 路線解放ファンファーレ */
+  /** 路線開業ファンファーレ（タタタ・ターン、タ・ターン！） */
   fanfare() {
     const v = 0.12 * this.volume;
-    [523, 659, 784, 1046].forEach((f, i) => tone(f, i * 0.1, 0.35, v, "triangle"));
+    [523, 659, 784].forEach((f, i) => tone(f, i * 0.12, 0.3, v, "triangle"));
+    tone(1046, 0.36, 0.6, v, "triangle");
+    tone(784, 0.8, 0.2, v, "triangle");
+    // 最後は和音で伸ばす
+    for (const f of [659, 784, 1046, 1318]) tone(f, 0.95, 1.6, v * 0.7, "triangle");
   },
 };

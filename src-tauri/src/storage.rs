@@ -7,7 +7,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
 /// 設定ファイルの形式のバージョン。既定値を見直したら上げる
-const SETTINGS_VERSION: u32 = 2;
+const SETTINGS_VERSION: u32 = 3;
 
 fn legacy_version() -> u32 {
     1
@@ -50,9 +50,9 @@ impl Default for Settings {
             delay_probability: 0.15,
             delay_min_sec: 4.0,
             delay_max_sec: 10.0,
-            speed_px_per_sec: 200.0,
-            min_segment_sec: 3.0,
-            max_segment_sec: 10.5,
+            speed_px_per_sec: 100.0,
+            min_segment_sec: 6.0,
+            max_segment_sec: 21.0,
             volume: 0.9,
             speech_fallback: true,
         }
@@ -61,10 +61,13 @@ impl Default for Settings {
 
 impl Settings {
     /// 古い版の設定ファイルは、見直した走行速度と停車時間を新しい既定値にする
+    /// （v2: 速度 1/3・停車 1 秒、v3: 速度をさらに半分）
     fn migrated(mut self) -> Self {
+        let d = Settings::default();
         if self.version < 2 {
-            let d = Settings::default();
             self.dwell_sec = d.dwell_sec;
+        }
+        if self.version < 3 {
             self.speed_px_per_sec = d.speed_px_per_sec;
             self.min_segment_sec = d.min_segment_sec;
             self.max_segment_sec = d.max_segment_sec;

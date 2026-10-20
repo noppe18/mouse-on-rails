@@ -72,6 +72,24 @@ body {
   pointer-events: none;
 }
 
+.station.transfer .station-dot {
+  stroke-width: 4.5;
+}
+
+.transfer-link-outline {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 20;
+  stroke-linecap: round;
+}
+
+.transfer-link {
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
 .station.near .station-dot {
   stroke: var(--line-color);
   r: 10;
@@ -175,10 +193,10 @@ body {
 }
 
 #hud {
+  /* 位置と幅は main.ts の placeHud が路線図を避けて決める */
   position: fixed;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%);
   width: min(640px, 50vw);
   pointer-events: none;
   text-align: center;
@@ -202,60 +220,6 @@ body {
   color: #fff;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.hud-lines {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-
-.hud-lines[hidden],
-.hud-line[hidden] {
-  display: none;
-}
-
-.hud-line-tab {
-  position: relative;
-  padding: 3px 14px;
-  border: 2px solid var(--line-color);
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--panel-ink);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.hud-line-tab:hover {
-  background: color-mix(in srgb, var(--line-color) 35%, transparent);
-}
-
-.hud-line-tab.current {
-  background: var(--line-color);
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.hud-line-tab.is-new::after {
-  content: "NEW";
-  position: absolute;
-  top: -9px;
-  right: -8px;
-  padding: 1px 5px;
-  border-radius: 6px;
-  background: #e53935;
-  color: #fff;
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  text-shadow: none;
-  animation: new-badge 1s ease-in-out infinite alternate;
-}
-
-@keyframes new-badge {
-  to { transform: scale(1.15); }
 }
 
 .hud-caption:not(:empty) {
@@ -297,6 +261,178 @@ body {
 }
 
 
+
+/* ---------- 路線開業の演出 ---------- */
+
+.rail.opening,
+.rail-shadow.opening {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: rail-draw 2.4s 0.4s ease-out forwards;
+}
+
+.rail.opening {
+  filter: drop-shadow(0 0 6px var(--line-color)) drop-shadow(0 0 14px var(--line-color));
+}
+
+.rail-ties.opening {
+  opacity: 0;
+  animation: fade-in 0.6s 2.6s forwards;
+}
+
+@keyframes rail-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fade-in {
+  to { opacity: 1; }
+}
+
+#celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--line-color) 45%, transparent), rgba(0, 0, 0, 0.55) 70%);
+  animation: fade-in-bg 0.4s ease-out;
+}
+
+#celebration[hidden] {
+  display: none;
+}
+
+@keyframes fade-in-bg {
+  from { opacity: 0; }
+}
+
+.celebration-rays {
+  position: absolute;
+  width: 220vmax;
+  height: 220vmax;
+  left: 50%;
+  top: 50%;
+  margin: -110vmax 0 0 -110vmax;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--line-color) 30%, transparent) 0deg 10deg, transparent 10deg 20deg);
+  animation: rays-spin 18s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rays-spin {
+  to { transform: rotate(360deg); }
+}
+
+.celebration-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 16px;
+  border-radius: 2px;
+  opacity: 0;
+  animation-name: confetti-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes confetti-fall {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 1; transform: translate(var(--drift), 110vh) rotate(var(--spin)); }
+}
+
+.celebration-card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  min-width: min(560px, 90vw);
+  padding: 28px 48px 22px;
+  border: 6px solid #ffd400;
+  border-radius: 22px;
+  background: #fff;
+  color: #1b1b1b;
+  text-align: center;
+  box-shadow: 0 0 0 6px #111, 0 0 80px color-mix(in srgb, var(--line-color) 80%, transparent);
+  animation: card-pop 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes card-pop {
+  0% { transform: scale(0.2) rotate(-8deg); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+
+.celebration-kicker {
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #d2001a;
+  text-shadow: 0 2px 0 #ffd400;
+  animation: kicker-bounce 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes kicker-bounce {
+  to { transform: scale(1.08); }
+}
+
+.celebration-line {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.celebration-badge {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  box-sizing: border-box;
+  border: 14px solid var(--line-color);
+  border-radius: 50%;
+  background: #fff;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 30px;
+  font-weight: 900;
+  animation: badge-spin 1s 0.3s ease-out both;
+}
+
+@keyframes badge-spin {
+  from { transform: rotate(-540deg) scale(0); }
+}
+
+.celebration-names {
+  display: grid;
+  justify-items: start;
+}
+
+.celebration-name {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--line-color);
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
+}
+
+.celebration-section {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.celebration-message {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.celebration-hint {
+  font-size: 12px;
+  color: #666;
+}
 
 #toasts {
   position: fixed;

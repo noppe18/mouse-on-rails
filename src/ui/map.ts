@@ -1,10 +1,15 @@
 // SVG による路線図・車両の描画
-import type { LineLayout } from "../domain/layout.ts";
+import { LABEL_OFFSET, type NetworkLayout } from "../domain/network.ts";
 import type { Direction, Point, VehicleDef } from "../domain/types.ts";
 
 /** 駅の前後に表示する、乗車方向を選ぶ矢印 */
 export interface BoardArrow {
+  /** NetworkLayout.lines の添字 */
+  line: number;
+  color: string;
   direction: Direction;
+  /** 矢印からラベルまでの距離 */
+  labelGap: number;
   point: Point;
   /** 進行方向（ラジアン） */
   angle: number;
@@ -25,56 +30,66 @@ function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, 
 
 export class MapView {
   private readonly svg: SVGSVGElement;
-  private stationNodes: SVGGElement[] = [];
+  private stationNodes = new Map<string, SVGGElement>();
   private train: SVGGElement | null = null;
+  private trainVehicle: VehicleDef | null = null;
   private arrows: SVGGElement | null = null;
-  private near: number | null = null;
-  private hover: number | null = null;
-  /** 乗車方向の矢印からラベルまでの距離。駅名を両側に置く路線では駅名より外に出す */
-  private arrowLabelGap = 30;
+  private near: string | null = null;
+  private hover: string | null = null;
 
   constructor(svg: SVGSVGElement) {
     this.svg = svg;
   }
 
-  render(layout: LineLayout, width: number, height: number): void {
+  render(network: NetworkLayout, width: number, height: number): void {
     const { svg } = this;
     svg.replaceChildren();
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    svg.style.setProperty("--line-color", layout.line.color);
 
-    const d = layout.path.toSvgPath();
-    el("path", { d, class: "rail-shadow" }, svg);
-    el("path", { d, class: "rail" }, svg);
-    el("path", { d, class: "rail-ties" }, svg);
+    // 線路は全路線の影を先に描き、交差部でも線路が途切れて見えないようにする
+    const paths = network.lines.map((l) => ({ d: l.path.toSvgPath(), color: l.line.color, id: l.line.id }));
+    // pathLength=1 にして、開業演出で線路を端から描けるようにする
+    for (const { d, id } of paths) el("path", { d, class: "rail-shadow", "data-line": id, pathLength: 1 }, svg);
+    for (const { d, color, id } of paths) {
+      el("path", { d, class: "rail", style: `--line-color:${color}`, "data-line": id, pathLength: 1 }, svg);
+      el("path", { d, class: "rail-ties", "data-line": id }, svg);
+    }
 
     const stations = el("g", { class: "stations" }, svg);
-    this.stationNodes = layout.stations.map((st) => {
+    this.stationNodes.clear();
+    for (const group of network.groups) {
+      const points = group.members.map((m) => network.lines[m.line].stations[m.station].point);
+      const primary = network.lines[group.members[0].line];
       const g = el(
         "g",
-        { class: "station", transform: `translate(${st.point.x},${st.point.y})`, "data-interactive": "", "data-station": st.index },
+        { class: "station", "data-interactive": "", "data-station": group.id, style: `--line-color:${primary.line.color}` },
         stations,
       );
-      el("circle", { r: 24, class: "station-hit" }, g);
-      el("circle", { r: 8, class: "station-dot" }, g);
-      // 交互配置では奇数番目の駅名を路線の外側に出す
-      const flip = layout.line.labelSide === "alternate" && st.index % 2 === 1 ? -1 : 1;
-      const nx = st.inward.x * flip;
-      const ny = st.inward.y * flip;
-      const label = el("text", { class: "station-label", x: nx * 18, y: ny * 18 }, g);
-      label.setAttribute("text-anchor", nx > 0.6 ? "start" : nx < -0.6 ? "end" : "middle");
-      label.setAttribute("dominant-baseline", ny > 0.6 ? "hanging" : ny < -0.6 ? "auto" : "central");
-      label.textContent = st.def.name;
-      return g;
-    });
+      if (group.members.length > 1) g.classList.add("transfer");
+      // 乗換駅で路線ごとの駅が離れていれば連絡線でつなぐ
+      const distinct = points.filter((p, i) => points.findIndex((q) => Math.hypot(p.x - q.x, p.y - q.y) < 1) === i);
+      if (distinct.length > 1) {
+        const d = distinct.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+        el("path", { d, class: "transfer-link-outline" }, g);
+        el("path", { d, class: "transfer-link" }, g);
+      }
+      for (const p of distinct) {
+        el("circle", { cx: p.x, cy: p.y, r: 24, class: "station-hit" }, g);
+        el("circle", { cx: p.x, cy: p.y, r: group.members.length > 1 ? 9 : 8, class: "station-dot" }, g);
+      }
+      const at = points[0];
+      const { x: nx, y: ny } = group.labelDir;
+      const label = el("text", { class: "station-label", x: at.x + nx * LABEL_OFFSET, y: at.y + ny * LABEL_OFFSET }, g);
+      label.setAttribute("text-anchor", nx > 0.3 ? "start" : nx < -0.3 ? "end" : "middle");
+      label.setAttribute("dominant-baseline", ny > 0.3 ? "hanging" : ny < -0.3 ? "auto" : "central");
+      label.textContent = primary.stations[group.members[0].station].def.name;
+      this.stationNodes.set(group.id, g);
+    }
 
     this.arrows = el("g", { class: "board-arrows" }, svg);
-
-    this.train = this.buildTrain(layout.line.vehicle);
-    this.train.style.display = "none";
-    svg.appendChild(this.train);
+    this.train = null;
+    this.trainVehicle = null;
     this.near = this.hover = null;
-    this.arrowLabelGap = layout.line.labelSide === "alternate" ? 50 : 30;
   }
 
   /** 進行方向 = +x の車両（1 両）。塗装は路線データに従う */
@@ -99,19 +114,33 @@ export class MapView {
     return g;
   }
 
+  /** 開業した路線を強調する（線路を端から描き、光らせる）。空配列で解除 */
+  highlightLines(ids: readonly string[]): void {
+    for (const path of this.svg.querySelectorAll<SVGPathElement>("path[data-line]")) {
+      path.classList.toggle("opening", ids.includes(path.dataset.line!));
+    }
+  }
+
   showBoardArrows(arrows: BoardArrow[]): void {
     if (!this.arrows) return;
     this.arrows.replaceChildren();
     for (const a of arrows) {
       const g = el(
         "g",
-        { class: "board-arrow", "data-interactive": "", "data-board-dir": a.direction, transform: `translate(${a.point.x},${a.point.y})` },
+        {
+          class: "board-arrow",
+          "data-interactive": "",
+          "data-board-line": a.line,
+          "data-board-dir": a.direction,
+          transform: `translate(${a.point.x},${a.point.y})`,
+          style: `--line-color:${a.color}`,
+        },
         this.arrows,
       );
       el("circle", { r: 19, class: "board-arrow-bg" }, g);
       el("path", { d: "M-6,-9 L6,0 L-6,9", class: "board-arrow-chevron", transform: `rotate(${(a.angle * 180) / Math.PI})` }, g);
       const { x: ox, y: oy } = a.outward;
-      const gap = this.arrowLabelGap;
+      const gap = a.labelGap;
       let lx = ox * gap;
       let anchor = ox > 0.6 ? "start" : ox < -0.6 ? "end" : "middle";
       if (anchor === "middle") {
@@ -135,22 +164,27 @@ export class MapView {
     this.arrows?.replaceChildren();
   }
 
-  setNear(index: number | null): void {
+  setNear(index: string | null): void {
     if (index === this.near) return;
-    if (this.near !== null) this.stationNodes[this.near]?.classList.remove("near");
-    if (index !== null) this.stationNodes[index]?.classList.add("near");
+    if (this.near !== null) this.stationNodes.get(this.near)?.classList.remove("near");
+    if (index !== null) this.stationNodes.get(index)?.classList.add("near");
     this.near = index;
   }
 
-  setHover(index: number | null): void {
+  setHover(index: string | null): void {
     if (index === this.hover) return;
-    if (this.hover !== null) this.stationNodes[this.hover]?.classList.remove("hover");
-    if (index !== null) this.stationNodes[index]?.classList.add("hover");
+    if (this.hover !== null) this.stationNodes.get(this.hover)?.classList.remove("hover");
+    if (index !== null) this.stationNodes.get(index)?.classList.add("hover");
     this.hover = index;
   }
 
-  showTrain(point: Point, angle: number, state: "stopped" | "running" | "delayed"): void {
-    if (!this.train) return;
+  showTrain(vehicle: VehicleDef, point: Point, angle: number, state: "stopped" | "running" | "delayed"): void {
+    if (!this.train || this.trainVehicle !== vehicle) {
+      this.train?.remove();
+      this.train = this.buildTrain(vehicle);
+      this.trainVehicle = vehicle;
+      this.svg.appendChild(this.train);
+    }
     this.train.style.display = "";
     this.train.setAttribute("transform", `translate(${point.x},${point.y}) rotate(${(angle * 180) / Math.PI})`);
     this.train.dataset.state = state;

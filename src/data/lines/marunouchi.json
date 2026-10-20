@@ -1,0 +1,172 @@
+{
+  "id": "marunouchi",
+  "name": "丸ノ内線",
+  "nameEn": "Marunouchi Line",
+  "color": "#F62E36",
+  "sign": {
+    "style": "tokyo-metro",
+    "code": "M",
+    "barColor": "#F62E36"
+  },
+  "loop": false,
+  "shape": {
+    "type": "route",
+    "nodes": [
+      { "station": "ikebukuro", "at": "yamanote" },
+      { "via": "diag-first" },
+      { "station": "korakuen", "at": "namboku" },
+      { "via": "diag-last" },
+      { "station": "tokyo", "x": "yamanote:tokyo", "dx": -0.6, "y": "yamanote:tokyo" },
+      { "via": "diag-first" },
+      { "station": "yotsuya", "at": "namboku" },
+      { "via": "diag-last" },
+      { "station": "shinjuku", "at": "yamanote" }
+    ]
+  },
+  "directions": {
+    "forward": {
+      "label": "東京経由",
+      "name": "新宿行き"
+    },
+    "backward": {
+      "label": "東京経由",
+      "name": "池袋行き"
+    }
+  },
+  "vehicle": {
+    "model": "2000系",
+    "body": "#E3342F",
+    "band": "#ffffff",
+    "subBand": "#9a1b1f",
+    "face": "#E3342F",
+    "faceAccent": "#1f2428"
+  },
+  "stations": [
+    {
+      "id": "ikebukuro",
+      "name": "池袋",
+      "kana": "いけぶくろ",
+      "romaji": "Ikebukuro",
+      "number": 25
+    },
+    {
+      "id": "shin-otsuka",
+      "name": "新大塚",
+      "kana": "しんおおつか",
+      "romaji": "Shin-otsuka",
+      "number": 24
+    },
+    {
+      "id": "myogadani",
+      "name": "茗荷谷",
+      "kana": "みょうがだに",
+      "romaji": "Myogadani",
+      "number": 23
+    },
+    {
+      "id": "korakuen",
+      "name": "後楽園",
+      "kana": "こうらくえん",
+      "romaji": "Korakuen",
+      "number": 22
+    },
+    {
+      "id": "hongo-sanchome",
+      "name": "本郷三丁目",
+      "kana": "ほんごうさんちょうめ",
+      "romaji": "Hongo-sanchome",
+      "number": 21
+    },
+    {
+      "id": "ochanomizu",
+      "name": "御茶ノ水",
+      "kana": "おちゃのみず",
+      "romaji": "Ochanomizu",
+      "number": 20
+    },
+    {
+      "id": "awajicho",
+      "name": "淡路町",
+      "kana": "あわじちょう",
+      "romaji": "Awajicho",
+      "number": 19
+    },
+    {
+      "id": "otemachi",
+      "name": "大手町",
+      "kana": "おおてまち",
+      "romaji": "Otemachi",
+      "number": 18
+    },
+    {
+      "id": "tokyo",
+      "name": "東京",
+      "kana": "とうきょう",
+      "romaji": "Tokyo",
+      "number": 17
+    },
+    {
+      "id": "ginza",
+      "name": "銀座",
+      "kana": "ぎんざ",
+      "romaji": "Ginza",
+      "number": 16
+    },
+    {
+      "id": "kasumigaseki",
+      "name": "霞ケ関",
+      "kana": "かすみがせき",
+      "romaji": "Kasumigaseki",
+      "number": 15
+    },
+    {
+      "id": "kokkai-gijidomae",
+      "name": "国会議事堂前",
+      "kana": "こっかいぎじどうまえ",
+      "romaji": "Kokkai-gijidomae",
+      "number": 14
+    },
+    {
+      "id": "akasaka-mitsuke",
+      "name": "赤坂見附",
+      "kana": "あかさかみつけ",
+      "romaji": "Akasaka-mitsuke",
+      "number": 13
+    },
+    {
+      "id": "yotsuya",
+      "name": "四ツ谷",
+      "kana": "よつや",
+      "romaji": "Yotsuya",
+      "number": 12
+    },
+    {
+      "id": "yotsuya-sanchome",
+      "name": "四谷三丁目",
+      "kana": "よつやさんちょうめ",
+      "romaji": "Yotsuya-sanchome",
+      "number": 11
+    },
+    {
+      "id": "shinjuku-gyoemmae",
+      "name": "新宿御苑前",
+      "kana": "しんじゅくぎょえんまえ",
+      "romaji": "Shinjuku-gyoemmae",
+      "number": 10
+    },
+    {
+      "id": "shinjuku-sanchome",
+      "name": "新宿三丁目",
+      "kana": "しんじゅくさんちょうめ",
+      "romaji": "Shinjuku-sanchome",
+      "number": 9
+    },
+    {
+      "id": "shinjuku",
+      "name": "新宿",
+      "kana": "しんじゅく",
+      "romaji": "Shinjuku",
+      "number": 8
+    }
+  ]
+}

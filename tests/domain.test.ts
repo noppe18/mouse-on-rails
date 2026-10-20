@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { layoutLine, segmentDistance, nextStationIndex } from "../src/domain/layout.ts";
+import { layoutNetwork } from "../src/domain/network.ts";
 import { RideSession, type OperationConfig } from "../src/domain/ride.ts";
 import { newlyUnlocked, ridesUntilNextUnlock, unlockedCount } from "../src/domain/unlock.ts";
 import type { Catalog, LineDef } from "../src/domain/types.ts";
@@ -9,6 +10,14 @@ import type { Catalog, LineDef } from "../src/domain/types.ts";
 const loadLine = (id: string): LineDef => JSON.parse(readFileSync(new URL(`../src/data/lines/${id}.json`, import.meta.url), "utf8"));
 const yamanote = loadLine("yamanote");
 const catalog: Catalog = JSON.parse(readFileSync(new URL("../src/data/catalog.json", import.meta.url), "utf8"));
+const networkLines = catalog.lines.filter((l) => l.available).map((l) => loadLine(l.id));
+const allIds = networkLines.map((l) => l.id);
+const SCREENS = [
+  [1366, 768],
+  [1920, 1080],
+  [2560, 1440],
+  [3440, 1440],
+];
 
 const config: OperationConfig = {
   boardingSec: 1,
@@ -90,9 +99,11 @@ test("3回乗車ごとに路線が解放される", () => {
   assert.equal(unlockedCount(catalog, 10_000), catalog.lines.length);
   assert.equal(ridesUntilNextUnlock(catalog, 1), 2);
   assert.equal(ridesUntilNextUnlock(catalog, 10_000), null);
-  assert.deepEqual(newlyUnlocked(catalog, 3, ["yamanote"]).map((l) => l.id), ["chuo"]);
-  assert.deepEqual(newlyUnlocked(catalog, 3, ["yamanote", "chuo"]), []);
-  assert.deepEqual(newlyUnlocked(catalog, 6, ["yamanote", "chuo"]).map((l) => l.id), ["namboku"]);
+  assert.deepEqual(newlyUnlocked(catalog, 3, ["yamanote"]).map((l) => l.id), ["namboku"]);
+  assert.deepEqual(newlyUnlocked(catalog, 3, ["yamanote", "namboku"]), []);
+  assert.deepEqual(newlyUnlocked(catalog, 6, ["yamanote", "namboku"]).map((l) => l.id), ["marunouchi"]);
+  // 起動していない間に 2 路線ぶん乗っていれば、まとめて開業する
+  assert.deepEqual(newlyUnlocked(catalog, 7, ["yamanote"]).map((l) => l.id), ["namboku", "marunouchi"]);
 });
 
 test("実装済みの路線はすべて路線データがあり、駅番号と読みがそろっている", () => {
@@ -104,31 +115,82 @@ test("実装済みの路線はすべて路線データがあり、駅番号と�
     assert.equal(new Set(line.stations.map((s) => s.number)).size, line.stations.length);
     assert.ok(line.sign?.code && line.vehicle, line.id);
     for (const st of line.stations) assert.ok(st.kana && st.romaji && Number.isInteger(st.number), `${line.id}/${st.id}`);
-    // 画面サイズを問わず配置でき、駅が路線の始点から順に並ぶ
-    for (const [w, h] of [[1366, 768], [3440, 1440]]) {
-      const layout = layoutLine(line, w, h);
-      for (let i = 1; i < layout.stations.length; i++) assert.ok(layout.stations[i].s > layout.stations[i - 1].s);
+  }
+});
+
+test("路線網: どの画面サイズでも全路線が画面に収まり、駅は路線の始点から順に並ぶ", () => {
+  for (const [w, h] of SCREENS) {
+    for (let n = 1; n <= allIds.length; n++) {
+      const net = layoutNetwork(networkLines, allIds.slice(0, n), w, h);
+      assert.equal(net.lines.length, n);
+      for (const layout of net.lines) {
+        for (const p of layout.path.points) assert.ok(p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h, `${layout.line.id} ${w}x${h}`);
+        for (let i = 1; i < layout.stations.length; i++) assert.ok(layout.stations[i].s > layout.stations[i - 1].s, `${layout.line.id} ${i}`);
+      }
     }
   }
 });
 
-test("中央線快速は東京から高尾、南北線は目黒から赤羽岩淵", () => {
-  const chuo = loadLine("chuo");
-  assert.equal(chuo.stations.length, 24);
-  assert.deepEqual([chuo.sign?.code, chuo.stations[0].number, chuo.stations[23].name], ["JC", 1, "高尾"]);
+test("路線網: 他の路線は山手線の環の中に収まり、山手線の配置は変わらない", () => {
+  for (const [w, h] of SCREENS) {
+    const alone = layoutLine(networkLines[0], w, h);
+    const net = layoutNetwork(networkLines, allIds, w, h);
+    assert.deepEqual(net.lines[0].stations.map((s) => s.point), alone.stations.map((s) => s.point));
+    for (const layout of net.lines) {
+      for (const p of layout.path.points) {
+        assert.ok(p.x >= net.frame.x0 - 0.5 && p.x <= net.frame.x1 + 0.5 && p.y >= net.frame.y0 - 0.5 && p.y <= net.frame.y1 + 0.5, layout.line.id);
+      }
+    }
+  }
+});
+
+test("路線網: 南北線・丸ノ内線は縦横と 45° の直線で描き、乗換駅は同じ位置か連絡線でつながる", () => {
+  for (const [w, h] of SCREENS) {
+    const net = layoutNetwork(networkLines, allIds, w, h);
+    for (const layout of net.lines.filter((l) => l.line.shape.type === "route")) {
+      const pts = layout.path.points;
+      for (let i = 1; i < pts.length; i++) {
+        const dx = Math.abs(pts[i].x - pts[i - 1].x);
+        const dy = Math.abs(pts[i].y - pts[i - 1].y);
+        assert.ok(dx < 0.01 || dy < 0.01 || Math.abs(dx - dy) < 0.01, `${layout.line.id} ${w}x${h} 区間 ${i}`);
+      }
+    }
+    const point = (line: string, station: string) => {
+      const l = net.lines.find((x) => x.line.id === line)!;
+      return l.stations.find((s) => s.def.id === station)!.point;
+    };
+    const same = (a: { x: number; y: number }, b: { x: number; y: number }) => assert.ok(Math.hypot(a.x - b.x, a.y - b.y) < 1e-6);
+    same(point("namboku", "meguro"), point("yamanote", "meguro"));
+    same(point("namboku", "komagome"), point("yamanote", "komagome"));
+    same(point("marunouchi", "ikebukuro"), point("yamanote", "ikebukuro"));
+    same(point("marunouchi", "shinjuku"), point("yamanote", "shinjuku"));
+    same(point("marunouchi", "korakuen"), point("namboku", "korakuen"));
+    same(point("marunouchi", "yotsuya"), point("namboku", "yotsuya"));
+    // 東京は山手線の線路と重ならないよう、少し内側に置いて連絡線でつなぐ
+    const d = Math.hypot(point("marunouchi", "tokyo").x - point("yamanote", "tokyo").x, point("marunouchi", "tokyo").y - point("yamanote", "tokyo").y);
+    assert.ok(d > 10 && d < 40);
+    const tokyo = net.groups.find((g) => g.id === "tokyo")!;
+    assert.equal(tokyo.members.length, 2);
+  }
+});
+
+test("南北線は目黒から駒込、丸ノ内線は池袋から新宿", () => {
   const namboku = loadLine("namboku");
-  assert.equal(namboku.stations.length, 19);
-  assert.deepEqual([namboku.sign?.code, namboku.stations[0].name, namboku.stations[18].number], ["N", "目黒", 19]);
+  assert.equal(namboku.stations.length, 14);
+  assert.deepEqual([namboku.sign?.code, namboku.stations[0].name, namboku.stations[13].name], ["N", "目黒", "駒込"]);
+  const marunouchi = loadLine("marunouchi");
+  assert.equal(marunouchi.stations.length, 18);
+  assert.deepEqual([marunouchi.sign?.code, marunouchi.stations[0].number, marunouchi.stations[17].name], ["M", 25, "新宿"]);
 });
 
 test("開路線は終点で折り返す", () => {
-  const layout = layoutLine(loadLine("chuo"), 1920, 1080);
-  const ride = new RideSession(layout, 22, 1, config, 0);
-  ride.update(1); // 西八王子を発車
-  ride.update(ride.phaseEnd); // 高尾に到着
-  assert.equal(ride.stationIndex, 23);
+  const layout = layoutNetwork(networkLines, allIds, 1920, 1080).lines[1];
+  const ride = new RideSession(layout, 12, 1, config, 0);
+  ride.update(1); // 本駒込を発車
+  ride.update(ride.phaseEnd); // 駒込に到着
+  assert.equal(ride.stationIndex, 13);
   assert.equal(ride.nextStation, null);
-  assert.deepEqual(ride.update(ride.phaseEnd), [{ type: "depart", from: 23, to: 22 }]);
+  assert.deepEqual(ride.update(ride.phaseEnd), [{ type: "depart", from: 13, to: 12 }]);
   assert.equal(ride.direction, -1);
 });
 
