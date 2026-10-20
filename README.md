@@ -67,7 +67,12 @@ npm install
 npm run tauri dev     # 開発起動
 npm test              # ドメインロジックのテスト
 npm run tauri build   # インストーラー作成
+npm run tauri:win     # WSL / Linux から Windows 用の exe をクロスビルド（下記）
 ```
+
+WSL から Windows 用の exe を作るには、`rustup target add x86_64-pc-windows-msvc`、`cargo install --locked cargo-xwin`、
+`sudo apt install llvm nsis`（clang / lld も必要）を済ませてから `npm run tauri:win` を実行します。
+`src-tauri/target/x86_64-pc-windows-msvc/release/mouse-on-rails.exe` ができるので、Windows 側にコピーして起動します。
 
 `npm run dev` だけでもブラウザで路線図の見た目を確認できます（カーソル移動などの OS 操作は行いません）。
 
@@ -89,7 +94,7 @@ src-tauri/src/
 - **カーソルの拘束**: 走行中だけ `WH_MOUSE_LL` フックを設置し、物理マウス入力（`LLMHF_INJECTED` でないもの）を破棄します。カーソルは `SetCursorPos` で車両に追従させます。停車・下車・緊急停止・タイムアウトで拘束を解除します。
 - **Esc / 緊急停車**: 路線図の表示中は `Esc` をグローバルホットキーとして登録し、フォーカスに関係なく受け取ります。乗車中はさらに `WH_KEYBOARD_LL` フックでも監視し、フック内で即座にマウスの拘束を解きます（両方から届いた Esc は 1 回として扱います）。その後確認ダイアログを出し、WebView が 2 秒以内に応答しない場合は Rust 側で停車させます。
 - **駅名標**: 画面中央の案内は、路線データの駅ナンバー・よみがな・ローマ字・スリーレターコードから `src/ui/sign.ts` が SVG で生成します。路線の `sign.style` で JR 東日本風（`jr-east`）か東京メトロ風（`tokyo-metro`）を選べます。
-- **路線の解放**: 累計 3 回乗車するごとに `catalog.json` の順に 1 路線を解放します（`ridesPerUnlock`。3 回で南北線、6 回で丸ノ内線）。解放は乗車中には知らせず、次に路線図を開いたときに派手にお知らせし（知らせてから `progress.json` に記録するので、途中でアプリを終了しても次の起動時に知らせます）、以降は山手線といっしょに路線図に表示されます。乗換駅では乗り入れる全路線の乗車矢印が出ます。
+- **路線の解放**: 累計 3 回乗車するごとに `catalog.json` の順に 1 路線を解放します（`ridesPerUnlock`。3 回で南北線、6 回で丸ノ内線、9 回で銀座線）。解放は乗車中には知らせず、次に路線図を開いたときに派手にお知らせし（知らせてから `progress.json` に記録するので、途中でアプリを終了しても次の起動時に知らせます）、以降は山手線といっしょに路線図に表示されます。乗換駅では乗り入れる全路線の乗車矢印が出ます。
 - **クリック透過**: 路線図表示中も、駅とポップアップの上以外ではクリックが背後のアプリに届きます。
 - **路線の追加**: `src/data/lines/` に JSON を追加し、`catalog.json` の `available` を `true` にします。形状は `roundedRect`、正規化座標の `polyline`、または `route` で記述します。
   `route` は山手線の環を基準に、他の路線の駅（`"yamanote:shinjuku"` など）や環に対する比率で頂点を置き、縦横と 45° の直線でつなぐデフォルメした経路です（`src/domain/network.ts`）。経路に書かない駅は前後の駅の間に等間隔で置きます。

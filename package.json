@@ -1,7 +1,7 @@
 {
   "name": "mouse-on-rails",
   "private": true,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
     "tauri": "tauri",
+    "tauri:win": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle",
     "voices": "node scripts/generate-voices.mjs",
     "voices:force": "node scripts/generate-voices.mjs --force"
   },
