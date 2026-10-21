@@ -24,13 +24,26 @@ if (!apiKey) {
   process.exit(1);
 }
 
+/** レートリミット（429）で待ち直す回数 */
+const RATE_LIMIT_RETRIES = 3;
+
 async function api(path, init = {}) {
-  const res = await fetch(`${API}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey, ...init.headers },
-  });
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-  return res.json();
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(`${API}${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey, ...init.headers },
+    });
+    if (res.ok) return res.json();
+    const body = await res.text();
+    if (res.status === 429 && attempt < RATE_LIMIT_RETRIES) {
+      // 1 分あたりの上限に達したら、API が示す秒数（なければ 30 秒）待ってやり直す
+      const wait = Number(/retry in (\d+(?:\.\d+)?)s/i.exec(body)?.[1] ?? 30) + 1;
+      process.stdout.write(`（レートリミット: ${Math.ceil(wait)} 秒待って再試行）`);
+      await new Promise((r) => setTimeout(r, wait * 1000));
+      continue;
+    }
+    throw new Error(`${res.status} ${body}`);
+  }
 }
 
 /** 使える声（既製の声と自作した声）をすべて取得する */
