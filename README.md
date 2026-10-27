@@ -5,6 +5,10 @@
 ウルトラワイドモニターの端から端までカーソルを動かすのが面倒？ それなら山手線に乗せればいいじゃない。
 ただし鉄道なので、**駅以外では下車できません**。ときどき遅延もします。
 
+## PV
+
+https://youtu.be/XmnlWe7tt9s
+
 ## ダウンロード（Windows）
 
 [Releases](https://github.com/noppe18/mouse-on-rails/releases/latest) から以下のいずれかを取得してください。
